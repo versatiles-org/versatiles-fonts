@@ -51,6 +51,7 @@ async function start() {
 							name = name.replace(/([a-z0-9])([A-Z])/g, '$1 $2');
 							name = name.replace(/([A-Z])([A-Z][a-z])/g, '$1 $2');
 							name = name.replace(/\s+/, ' ').trim();
+							name = name.toLowerCase().replace(/\s/g, '_');
 							fonts.push({ name, sources: [path.basename(file)] });
 						}
 					});
@@ -99,8 +100,8 @@ async function processFonts(dir, fonts) {
 			await Promise.all(ranges.map(range => processRange(range)));
 		}
 
-		console.log(' Size histo [kB]: %s', histogram.map(v => v > 512 ? Math.round(v / 1024) : '').join('|'));
-		console.log(' Total size %s B', sizeSum);
+		//console.log(' Size histo [kB]: %s', histogram.map(v => v > 512 ? Math.round(v / 1024) : '').join('|'));
+		console.log('      Total size %s KB', Math.round(sizeSum/1024));
 
 		return sizeSum;
 
