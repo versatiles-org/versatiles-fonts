@@ -5,8 +5,8 @@
 ```bash
 git clone git@github.com:opencloudtiles/opencloudtiles-fonts.git
 cd opencloudtiles-fonts
-npm i
-npm run generate
+npm install
+npm start
 ```
 
 ## Fonts
