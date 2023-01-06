@@ -9,6 +9,8 @@ npm install
 npm start
 ```
 
+Generates a `dist/fonts.tar.gz` with all glyphs. Filenames in the TAR have to start with `fonts/...`.
+
 ## Fonts
 
 - [Metropolis](https://fontsarena.com/metropolis-by-chris-simpson/), by Chris Simpson, [Public Domain](https://wiki.creativecommons.org/wiki/public_domain)
