@@ -2,7 +2,8 @@
   "name": "opencloudtiles-fonts",
   "version": "1.0.0",
   "scripts": {
-    "start": "bin/generate.sh"
+    "generate": "bin/generate.sh",
+    "release": "bin/release.sh"
   },
   "dependencies": {
     "@mapbox/glyph-pbf-composite": "^0.0.3",

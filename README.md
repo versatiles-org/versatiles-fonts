@@ -6,7 +6,8 @@
 git clone git@github.com:opencloudtiles/opencloudtiles-fonts.git
 cd opencloudtiles-fonts
 npm install
-npm start
+npm run generate
+npm run release
 ```
 
 Generates a `dist/fonts.tar.gz` with all glyphs. Filenames in the TAR have to start with `fonts/...`.
