@@ -9,9 +9,9 @@ const glyphCompose = require('@mapbox/glyph-pbf-composite');
 const DEBUG = false;
 
 const inputDir = path.resolve(__dirname, '../font-sources');
-const outputDir = path.resolve(__dirname, '../dist');
+const outputDir = path.resolve(__dirname, '../dist/fonts/');
 
-if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir);
+if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, {recursive:true});
 
 start()
 async function start() {
@@ -23,7 +23,7 @@ async function start() {
 		console.log('Directory [%s]:', path.relative(inputDir, dir));
 		sizeSumTotal += await processFonts(dir, fonts);
 	}
-	console.log('Total size %s B', sizeSumTotal);
+	console.log('Total size %s KB', Math.round(sizeSumTotal/1024));
 
 	function getTodos() {
 		const todos = [];
