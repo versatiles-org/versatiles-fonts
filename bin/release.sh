@@ -15,5 +15,7 @@ find fonts -name "*.pbf" -print0 | tar -cf fonts.tar --null --files-from -
 echo " -> gzip"
 gzip -9kfv fonts.tar
 
-echo " -> upload"
-gh release upload latest fonts.tar.gz --clobber
+echo " -> release"
+release_version="v$(jq -r '.version' package.json)"
+gh release create $release_version fonts.tar.gz
+#gh release upload latest fonts.tar.gz --clobber
