@@ -1,6 +1,8 @@
 #!/bin/bash
 cd "$(dirname "$0")"
 
+git push
+
 cd ../dist/
 
 echo " -> tar"
