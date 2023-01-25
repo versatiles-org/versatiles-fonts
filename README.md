@@ -3,7 +3,7 @@
 ## install, generate and package glyphs
 
 ```bash
-git clone git@github.com:versatiles/versatiles-fonts.git
+git clone git@github.com:versatiles-org/versatiles-fonts.git
 cd versatiles-fonts
 npm install
 npm run generate
