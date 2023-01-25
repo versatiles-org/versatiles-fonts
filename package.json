@@ -1,6 +1,6 @@
 {
-  "name": "opencloudtiles-fonts",
-  "version": "0.0.3",
+  "name": "versatiles-fonts",
+  "version": "0.0.4",
   "scripts": {
     "generate": "bin/generate.sh",
     "release": "bin/release.sh"
