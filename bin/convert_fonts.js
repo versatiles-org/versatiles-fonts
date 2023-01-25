@@ -29,6 +29,8 @@ async function start() {
 		const todos = [];
 
 		fs.readdirSync(inputDir).forEach(dir => {
+			if (dir.startsWith('_')) return;
+
 			dir = path.resolve(inputDir, dir);
 			if (fs.lstatSync(dir).isDirectory()) {
 				let fonts = false;
