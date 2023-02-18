@@ -8,5 +8,8 @@
   "dependencies": {
     "@mapbox/glyph-pbf-composite": "^0.0.3",
     "fontnik": "^0.7.0"
-  }
+  },
+  "cpu": [
+    "!arm64",
+  ]
 }
