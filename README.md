@@ -25,4 +25,8 @@ curl -L "https://github.com/versatiles-org/versatiles-fonts/releases/latest/down
 - [Open Sans](https://www.opensans.com), by Steve Matteson, [OFL](https://en.wikipedia.org/wiki/SIL_Open_Font_License)
 - [PT Sans](https://company.paratype.com/pt-sans-pt-serif), Alexandra Korolkova, Olga Umpelova, Vladimir Yefimov, [OFL](https://en.wikipedia.org/wiki/SIL_Open_Font_License)
 - [Roboto](https://fonts.google.com/specimen/Roboto), Christian Robertson, [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0)
-
+- [Lato](https://fonts.google.com/specimen/Lato), Lukasz Dziedzic, [OFL](https://en.wikipedia.org/wiki/SIL_Open_Font_License)
+- [Libre Baskerville](https://fonts.google.com/specimen/Libre_Baskerville), Pablo Impallari, Rodrigo Fuenzalida, [OFL](https://en.wikipedia.org/wiki/SIL_Open_Font_License)
+- [Merriweather](https://fonts.google.com/specimen/Merriweather), The Merriweather Project Authors, [OFL](https://en.wikipedia.org/wiki/SIL_Open_Font_License)
+- [Nunito](https://fonts.google.com/specimen/Nunito), The Nunito Project Authors [OFL](https://en.wikipedia.org/wiki/SIL_Open_Font_License)
+- [Source Sans Pro](https://fonts.google.com/specimen/Source_Sans_Pro), Adobe Systems Incorporated [OFL](https://en.wikipedia.org/wiki/SIL_Open_Font_License)
