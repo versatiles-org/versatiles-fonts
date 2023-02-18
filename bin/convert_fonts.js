@@ -83,7 +83,7 @@ async function processFonts(dir, fonts) {
 
 		config.sources.forEach(sourceName => {
 			try {
-				sourceFonts[sourceName] ??= fs.readFileSync(dir + '/' + sourceName);
+				sourceFonts[sourceName] = fs.readFileSync(dir + '/' + sourceName) || null;
 			} catch (e) { }
 		});
 
