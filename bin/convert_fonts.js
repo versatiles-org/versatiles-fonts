@@ -72,8 +72,10 @@ async function processFonts(dir, fonts) {
 	let sizeSum = 0;
 	// would be much faster in parallel, but this is better for logging
 	for (let font of fonts) {
-		console.log('   Font [%s]:', font.name);
-		sizeSum += await makeGlyphs(font);
+		process.stdout(`   Font [${font.name}]`);
+		let size = await makeGlyphs(font);
+		process.stdout(` - ${Math.round(sizeSum/1024)} KB\n`);
+		sizeSum += size;
 	}
 	return sizeSum;
 
@@ -101,9 +103,6 @@ async function processFonts(dir, fonts) {
 		} else {
 			await Promise.all(ranges.map(range => processRange(range)));
 		}
-
-		//console.log(' Size histo [kB]: %s', histogram.map(v => v > 512 ? Math.round(v / 1024) : '').join('|'));
-		console.log('      Total size %s KB', Math.round(sizeSum/1024));
 
 		return sizeSum;
 
