@@ -8,6 +8,8 @@ jobs:
   release:
     name: Build and release
     runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.DOCUBOT_READORG_REPO_WORKFLOW_SCOPES }}
     steps:
       - name: Get Repo
         uses: actions/checkout@v3
@@ -19,7 +21,7 @@ jobs:
         run: npm install; npm run generate
 
       - name: Generate release file
-        run: npm run generate
+        run: npm run release
 
       - name: Add file to release
-        run: gh release upload $TAG ./dist/fonts/fonts.tar.gz
+        run: gh release upload $TAG ./dist/fonts/fonts.tar.gz --clobber -R 'versatiles-org/versatiles-fonts'
