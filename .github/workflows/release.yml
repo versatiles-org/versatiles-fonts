@@ -16,7 +16,7 @@ jobs:
         run: echo "TAG=$(curl -s 'https://api.github.com/repos/versatiles-org/versatiles-fonts/releases/latest' | jq -r '.tag_name')" >> $GITHUB_ENV
 
       - name: Generate glyphs
-        run: npm run generate
+        run: npm install; npm run generate
 
       - name: Generate release file
         run: npm run generate
