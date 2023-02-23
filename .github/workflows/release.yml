@@ -1,7 +1,6 @@
 name: Release Fonts
 on:
   release:
-    types: [published]
   workflow_dispatch:
 
 jobs:
@@ -25,11 +24,6 @@ jobs:
 
       - name: Add file to release
         run: gh release upload $TAG dist/fonts.tar.gz --clobber
-        #uses: svenstaro/upload-release-action@v2
-        #with:
-        #  repo_token: ${{ secrets.GITHUB_TOKEN }}
-        #  file: dist/fonts.tar.gz
-        #  tag: ${{ env.TAG }}
-        #  overwrite: true
-
-#          run: gh release upload $TAG dist/fonts.tar.gz --clobber -R 'versatiles-org/versatiles-fonts'
+      
+      - name: Finalise release
+        run: gh release edit $TAG --latest --draft=false
