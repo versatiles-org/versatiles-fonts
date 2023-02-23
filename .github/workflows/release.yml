@@ -9,7 +9,7 @@ jobs:
     name: Build and release
     runs-on: ubuntu-latest
     env:
-      GITHUB_TOKEN: ${{ secrets.DOCUBOT_READORG_REPO_WORKFLOW_SCOPES }}
+      GH_TOKEN: ${{ github.token }}
     steps:
       - name: Get Repo
         uses: actions/checkout@v3
