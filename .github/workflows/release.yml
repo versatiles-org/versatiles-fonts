@@ -23,8 +23,5 @@ jobs:
       - name: Generate release file
         run: npm run release
 
-      - name: where am i?
-        run: pwd; ls -lah; du -hd 3
-
       - name: Add file to release
-        run: gh release upload $TAG ./dist/fonts/fonts.tar.gz --clobber -R 'versatiles-org/versatiles-fonts'
+        run: gh release upload $TAG ./dist/fonts.tar.gz --clobber -R 'versatiles-org/versatiles-fonts'
