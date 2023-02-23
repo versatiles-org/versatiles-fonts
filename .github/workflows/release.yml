@@ -1,0 +1,25 @@
+name: Release Fonts
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  release:
+    name: Build and release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get Repo
+        uses: actions/checkout@v3
+
+      - name: Get latest version
+        run: echo "TAG=$(curl -s 'https://api.github.com/repos/versatiles-org/versatiles-fonts/releases/latest' | jq -r '.tag_name')" >> $GITHUB_ENV
+
+      - name: Generate glyphs
+        run: npm run generate
+
+      - name: Generate release file
+        run: npm run generate
+
+      - name: Add file to release
+        run: gh release upload $TAG ./dist/fonts/fonts.tar.gz
