@@ -1,7 +1,7 @@
-name: Release Fonts
+name: Release fonts
 on:
   release:
-  workflow_dispatch:
+    types: [published]
 
 jobs:
   release:
@@ -10,11 +10,11 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
+      - name: "Get release tag name"
+        run: "echo \"RELEASE_TAG=${GITHUB_REF#refs/tags/}\" >> $GITHUB_ENV"
+
       - name: Get Repo
         uses: actions/checkout@v3
-
-      - name: Get latest version
-        run: echo "TAG=$(curl -s 'https://api.github.com/repos/versatiles-org/versatiles-fonts/releases/latest' | jq -r '.tag_name')" >> $GITHUB_ENV
 
       - name: Generate glyphs
         run: npm install; npm run generate
@@ -23,7 +23,4 @@ jobs:
         run: npm run release
 
       - name: Add file to release
-        run: gh release upload $TAG dist/fonts.tar.gz --clobber
-      
-      - name: Finalise release
-        run: gh release edit $TAG --latest --draft=false
+        run: gh release upload $RELEASE_TAG dist/fonts.tar.gz --clobber
