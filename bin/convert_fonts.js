@@ -72,9 +72,9 @@ async function processFonts(dir, fonts) {
 	let sizeSum = 0;
 	// would be much faster in parallel, but this is better for logging
 	for (let font of fonts) {
-		process.stdout(`   Font [${font.name}]`);
+		process.stdout.write(`   Font [${font.name}]`);
 		let size = await makeGlyphs(font);
-		process.stdout(` - ${Math.round(sizeSum/1024)} KB\n`);
+		process.stdout.write(` - ${Math.round(sizeSum/1024)} KB\n`);
 		sizeSum += size;
 	}
 	return sizeSum;
