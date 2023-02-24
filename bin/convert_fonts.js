@@ -15,6 +15,7 @@ if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, {recursive:true});
 
 start()
 async function start() {
+	let fontnames = [];
 	const todos = getTodos();
 
 	// would be much faster in parallel, but this is better for logging
@@ -24,6 +25,8 @@ async function start() {
 		sizeSumTotal += await processFonts(dir, fonts);
 	}
 	console.log('Total size %s KB', Math.round(sizeSumTotal/1024));
+
+	fs.writeFileSync(path.resolve(outputDir,"fonts.json"), JSON.stringify(fontnames,null,"\t"));
 
 	function getTodos() {
 		const todos = [];
@@ -39,6 +42,7 @@ async function start() {
 					fonts.forEach(font => {
 						// skip sources starting with '//' -- these are "commented"
 						font.sources = font.sources.filter(f => !f.includes('//'));
+						fontnames.push(font.name);
 					});
 				} catch (e) {
 					if (e.code !== 'MODULE_NOT_FOUND') console.error(e);
@@ -55,6 +59,7 @@ async function start() {
 							name = name.replace(/\s+/, ' ').trim();
 							name = name.toLowerCase().replace(/\s/g, '_');
 							fonts.push({ name, sources: [path.basename(file)] });
+							fontnames.push(name);
 						}
 					});
 				}
@@ -85,7 +90,7 @@ async function processFonts(dir, fonts) {
 
 		config.sources.forEach(sourceName => {
 			try {
-				sourceFonts[sourceName] ??= fs.readFileSync(dir + '/' + sourceName);
+				sourceFonts[sourceName] = fs.readFileSync(dir + '/' + sourceName) || null;
 			} catch (e) { }
 		});
 

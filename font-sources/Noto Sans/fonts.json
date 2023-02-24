@@ -1,6 +1,6 @@
 [
 	{
-		"name": "noto_sans_regular",
+		"name": "Noto Sans Regular",
 		"sources": [
 			"NotoSans-Regular.ttf",
 			"NotoNaskhArabic-Regular.ttf",
@@ -29,7 +29,7 @@
 		]
 	},
 	{
-		"name": "noto_sans_bold",
+		"name": "Noto Sans Bold",
 		"sources": [
 			"NotoSans-Bold.ttf",
 			"NotoNaskhArabic-Bold.ttf",
@@ -58,7 +58,7 @@
 		]
 	},
 	{
-		"name": "noto_sans_italic",
+		"name": "Noto Sans Italic",
 		"sources": [
 			"NotoSans-Italic.ttf",
 			"NotoNaskhArabic-Regular.ttf",
