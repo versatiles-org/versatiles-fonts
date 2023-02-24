@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 cd "$(dirname "$0")"
+set -e
 
 cd ../dist/
 
@@ -10,7 +11,3 @@ cd ..
 
 echo " -> gzip"
 gzip -9kfv fonts.tar
-
-# echo " -> release"
-# release_version="v$(jq -r '.version' ../package.json)"
-# gh release create $release_version --generate-notes fonts.tar.gz
