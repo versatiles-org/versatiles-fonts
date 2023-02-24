@@ -22,8 +22,8 @@ jobs:
       - name: Generate release file
         run: npm run release
 
-      - name: Add file to release
-        run: gh release upload $RELEASE_TAG dist/fonts.tar.gz --clobber
+      - name: Add files to release
+        run: gh release upload $RELEASE_TAG dist/*.tar.gz --clobber
 
       - name: Update release
         run: gh release edit $RELEASE_TAG --draft=false --latest --prerelease=false

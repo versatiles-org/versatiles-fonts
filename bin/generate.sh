@@ -4,5 +4,4 @@ set -e
 
 rm -rf ../dist || true
 
-echo " -> convert fonts"
 node convert_fonts.js

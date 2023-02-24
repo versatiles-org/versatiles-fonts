@@ -4,10 +4,8 @@ set -e
 
 cd ../dist/
 
-echo " -> tar"
-cd fonts
-find . -name "*.pbf" -print0 | tar -cf ../fonts.tar --null --files-from -
-cd ..
+echo "delete temporary glyphs"
+rm -rf fonts
 
-echo " -> gzip"
-gzip -9kfv fonts.tar
+echo "compress tar files"
+parallel gzip -9f {} ::: *.tar
