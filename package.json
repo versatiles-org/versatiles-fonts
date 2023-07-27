@@ -2,7 +2,8 @@
   "name": "versatiles-fonts",
   "version": "1.0.0",
   "scripts": {
-    "build": "bin/generate.sh"
+    "build": "bin/generate.sh",
+    "release": "bin/release.sh"
   },
   "type": "module",
   "dependencies": {

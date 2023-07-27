@@ -1,7 +1,9 @@
 name: Release fonts
 on:
-  release:
-    types: [published]
+  push:
+    branches:
+      - "main"
+  workflow_dispatch:
 
 jobs:
   release:
@@ -10,20 +12,24 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
-      - name: "Get release tag name"
-        run: "echo \"RELEASE_TAG=${GITHUB_REF#refs/tags/}\" >> $GITHUB_ENV"
+      - uses: actions/checkout@v3
 
-      - name: Get Repo
-        uses: actions/checkout@v3
+      - run: 'echo "RELEASE_TAG=v$(jq -r ''.version'' package.json)" >> $GITHUB_ENV'
+        name: get version
 
-      - name: Generate glyphs
-        run: npm install; npm run generate
+      - run: npm install
 
-      - name: Generate release file
-        run: npm run release
+      - run: npm run build
+        name: build
 
-      - name: Add files to release
-        run: gh release upload $RELEASE_TAG dist/*.tar.gz --clobber
+      - run: npm run release
+        name: prepare release
 
-      - name: Update release
-        run: gh release edit $RELEASE_TAG --draft=false --latest --prerelease=false
+      - run: gh release create $RELEASE_TAG || true
+        name: create release if needed
+
+      - run: gh release upload $RELEASE_TAG --clobber dist/*.tar.gz
+        name: add file to release
+
+      - run: gh release edit $RELEASE_TAG --draft=false --latest --prerelease=false
+        name: update release

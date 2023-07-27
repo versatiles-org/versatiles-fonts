@@ -6,8 +6,7 @@
 git clone git@github.com:versatiles-org/versatiles-fonts.git
 cd versatiles-fonts
 npm install
-npm run generate
-npm run release
+npm run build
 ```
 
 Generates a `dist/fonts.tar.gz` with all glyphs.

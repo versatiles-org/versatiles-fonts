@@ -8,4 +8,4 @@ echo "delete temporary glyphs"
 rm -rf fonts
 
 echo "compress tar files"
-parallel gzip -9f {} ::: *.tar
+gzip -9f *.tar
