@@ -38,22 +38,17 @@ writeFileSync(resolve(outputDir, 'fonts.json'), JSON.stringify(fontnames, null, 
 
 console.log('tar fonts');
 
-await tar('fonts');
+tar('fonts');
 
 let fontFamilies = {};
-fonts.forEach(f => (fontFamilies[f.family] = fontFamilies[f.family] || []).push(f.name))
-for (let [family, names] of Object.entries(fontFamilies)) {
-	tar(family, names);
-}
+fonts.forEach(f => (fontFamilies[f.family] ??= []).push(f.name));
+for (let [family, names] of Object.entries(fontFamilies)) tar(family, names);
 
 console.log('Finished')
 
 function tar(name, folders) {
 	console.log(`   ${name}.tar`)
-	let paths = ['.'];
-	if (folders) {
-		paths = folders.map(f => './' + f);
-	}
+	let paths = folders ? folders.map(f => './' + f) : ['.'];
 	let cmd = `find ${paths.join(' ')} -name "*.pbf" -print0 | tar -cf ../${name}.tar --null --files-from -`;
 	execSync(cmd, { cwd: outputDir })
 }
@@ -69,20 +64,22 @@ function getFonts() {
 			let fonts = [];
 
 			let fontFile = resolve(dirInFont, 'fonts.json');
-			if (existsSync(fontFile)) fonts = JSON.parse(readFileSync(fontFile));
-
-			readdirSync(dirInFont).forEach(file => {
-				if (file.endsWith('.ttf') || file.endsWith('.otf')) {
-					// compatible font name generation with genfontgl
-					let name = basename(file);
-					name = name.replace(/\..*?$/, '');
-					name = name.replace(/\-/g, '');
-					name = name.replace(/([a-z0-9])([A-Z])/g, '$1 $2');
-					name = name.replace(/([A-Z])([A-Z][a-z])/g, '$1 $2');
-					name = name.replace(/\s+/, ' ').trim();
-					fonts.push({ name, sources: [basename(file)] });
-				}
-			});
+			if (existsSync(fontFile)) {
+				fonts = JSON.parse(readFileSync(fontFile));
+			} else {
+				readdirSync(dirInFont).forEach(file => {
+					if (file.endsWith('.ttf') || file.endsWith('.otf')) {
+						// compatible font name generation with genfontgl
+						let name = basename(file);
+						name = name.replace(/\..*?$/, '');
+						name = name.replace(/\-/g, '');
+						name = name.replace(/([a-z0-9])([A-Z])/g, '$1 $2');
+						name = name.replace(/([A-Z])([A-Z][a-z])/g, '$1 $2');
+						name = name.replace(/\s+/, ' ').trim();
+						fonts.push({ name, sources: [basename(file)] });
+					}
+				});
+			}
 
 			// font.name should be lowercase+underscore
 			fonts.forEach(font => {
