@@ -4,6 +4,7 @@
   "scripts": {
     "build": "bin/generate.sh"
   },
+  "type": "module",
   "dependencies": {
     "@mapbox/glyph-pbf-composite": "^0.0.3",
     "fontnik": "^0.7.2",

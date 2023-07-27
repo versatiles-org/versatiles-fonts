@@ -1,98 +1,95 @@
 #!/usr/bin/env node
 'use strict'
 
-const fs = require('fs');
-const path = require('path');
-const fontnik = require('fontnik');
-const glyphCompose = require('@mapbox/glyph-pbf-composite');
-const { resolve } = require('path');
-const { execSync } = require('child_process');
-require('work-faster');
+import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { basename, dirname, resolve } from 'node:path';
+import fontnik from 'fontnik';
+import glyphCompose from '@mapbox/glyph-pbf-composite';
+import { execSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
-const inputDir = path.resolve(__dirname, '../font-sources');
-const outputDir = path.resolve(__dirname, '../dist/fonts/');
+import 'work-faster';
 
-if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const inputDir = resolve(__dirname, '../font-sources');
+const outputDir = resolve(__dirname, '../dist/fonts/');
 
-start()
-async function start() {
-	console.log('scan for fonts');
-	const fonts = getFonts();
+if (!existsSync(outputDir)) mkdirSync(outputDir, { recursive: true });
 
-	let sizePos = 0;
-	let sizeSum = fonts.reduce((s, f) => s + f.sizeIn, 0);
+console.log('scan for fonts');
+const fonts = getFonts();
 
-	console.log('convert fonts');
-	await fonts.forEachAsync(async font => {
-		let progress = (100 * sizePos / sizeSum).toFixed(1) + '%';
-		progress = ' '.repeat(8 - progress.length) + progress;
-		process.stdout.write('\u001b[2K\r' + progress + ' - ' + font.name)
+let sizePos = 0;
+let sizeSum = fonts.reduce((s, f) => s + f.sizeIn, 0);
 
-		await makeGlyphs(font);
-		sizePos += font.sizeIn;
-	})
-	process.stdout.write('\u001b[2K\r')
+console.log('convert fonts');
+await fonts.forEachAsync(async font => {
+	let progress = (100 * sizePos / sizeSum).toFixed(1) + '%';
+	progress = ' '.repeat(8 - progress.length) + progress;
+	process.stdout.write('\u001b[2K\r' + progress + ' - ' + font.name)
 
-	let fontnames = fonts.map(f => f.name);
-	fs.writeFileSync(path.resolve(outputDir, 'fonts.json'), JSON.stringify(fontnames, null, '\t'));
+	await makeGlyphs(font);
+	sizePos += font.sizeIn;
+})
+process.stdout.write('\u001b[2K\r')
 
-	console.log('tar fonts');
+let fontnames = fonts.map(f => f.name);
+writeFileSync(resolve(outputDir, 'fonts.json'), JSON.stringify(fontnames, null, '\t'));
 
-	await tar('fonts');
+console.log('tar fonts');
 
-	let fontFamilies = {};
-	fonts.forEach(f => (fontFamilies[f.family] = fontFamilies[f.family] || []).push(f.name))
-	for (let [family, names] of Object.entries(fontFamilies)) {
-		tar(family, names);
+await tar('fonts');
+
+let fontFamilies = {};
+fonts.forEach(f => (fontFamilies[f.family] = fontFamilies[f.family] || []).push(f.name))
+for (let [family, names] of Object.entries(fontFamilies)) {
+	tar(family, names);
+}
+
+console.log('Finished')
+
+function tar(name, folders) {
+	console.log(`   ${name}.tar`)
+	let paths = ['.'];
+	if (folders) {
+		paths = folders.map(f => './' + f);
 	}
-
-	console.log('Finished')
-
-	function tar(name, folders) {
-		console.log(`   ${name}.tar`)
-		let paths = ['.'];
-		if (folders) {
-			paths = folders.map(f => './' + f);
-		}
-		let cmd = `find ${paths.join(' ')} -name "*.pbf" -print0 | tar -cf ../${name}.tar --null --files-from -`;
-		execSync(cmd, { cwd: outputDir })
-	}
+	let cmd = `find ${paths.join(' ')} -name "*.pbf" -print0 | tar -cf ../${name}.tar --null --files-from -`;
+	execSync(cmd, { cwd: outputDir })
 }
 
 function getFonts() {
 	const todos = [];
 
-	fs.readdirSync(inputDir).forEach(dirName => {
+	readdirSync(inputDir).forEach(dirName => {
 		if (dirName.startsWith('_')) return;
 
-		let dirInFont = path.resolve(inputDir, dirName);
-		if (fs.lstatSync(dirInFont).isDirectory()) {
+		let dirInFont = resolve(inputDir, dirName);
+		if (lstatSync(dirInFont).isDirectory()) {
 			let fonts = [];
-			try {
-				fonts = require(path.resolve(dirInFont, 'fonts.json'));
-			} catch (e) {
-				if (e.code !== 'MODULE_NOT_FOUND') console.error(e);
 
-				fs.readdirSync(dirInFont).forEach(file => {
-					if (path.extname(file) === '.ttf' || path.extname(file) === '.otf') {
-						// compatible font name generation with genfontgl
-						let name = path.basename(file);
-						name = name.replace(/\..*?$/, '');
-						name = name.replace(/\-/g, '');
-						name = name.replace(/([a-z0-9])([A-Z])/g, '$1 $2');
-						name = name.replace(/([A-Z])([A-Z][a-z])/g, '$1 $2');
-						name = name.replace(/\s+/, ' ').trim();
-						fonts.push({ name, sources: [path.basename(file)] });
-					}
-				});
-			}
+			let fontFile = resolve(dirInFont, 'fonts.json');
+			if (existsSync(fontFile)) fonts = JSON.parse(readFileSync(fontFile));
+
+			readdirSync(dirInFont).forEach(file => {
+				if (file.endsWith('.ttf') || file.endsWith('.otf')) {
+					// compatible font name generation with genfontgl
+					let name = basename(file);
+					name = name.replace(/\..*?$/, '');
+					name = name.replace(/\-/g, '');
+					name = name.replace(/([a-z0-9])([A-Z])/g, '$1 $2');
+					name = name.replace(/([A-Z])([A-Z][a-z])/g, '$1 $2');
+					name = name.replace(/\s+/, ' ').trim();
+					fonts.push({ name, sources: [basename(file)] });
+				}
+			});
 
 			// font.name should be lowercase+underscore
 			fonts.forEach(font => {
 				font.sources = font.sources.filter(s => !s.startsWith('//'));
 				font.name = font.name.toLowerCase().replace(/\s/g, '_');
 				font.sizeIn = font.sources.reduce(
-					(sum, source) => sum + fs.statSync(resolve(dirInFont, source)).size, 0
+					(sum, source) => sum + statSync(resolve(dirInFont, source)).size, 0
 				);
 				font.dirInFont = dirInFont;
 				font.family = dirName.toLowerCase().replace(/\s/g, '_');
@@ -107,11 +104,11 @@ function getFonts() {
 }
 
 async function makeGlyphs(font) {
-	if (!fs.existsSync(font.dirOutFont)) fs.mkdirSync(font.dirOutFont);
+	if (!existsSync(font.dirOutFont)) mkdirSync(font.dirOutFont);
 
 	const sourceFonts = {};
 	font.sources.forEach(sourceName => {
-		sourceFonts[sourceName] = fs.readFileSync(resolve(font.dirInFont, sourceName));
+		sourceFonts[sourceName] = readFileSync(resolve(font.dirInFont, sourceName));
 	});
 
 	let sizeSum = 0;
@@ -137,7 +134,7 @@ async function makeGlyphs(font) {
 		let combined = glyphCompose.combine(results);
 		sizeSum += combined.length;
 
-		fs.writeFileSync(resolve(font.dirOutFont, `${start}-${end}.pbf`), combined);
+		writeFileSync(resolve(font.dirOutFont, `${start}-${end}.pbf`), combined);
 	}
 
 	font.sizeOut = sizeSum;
