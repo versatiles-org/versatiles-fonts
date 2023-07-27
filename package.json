@@ -1,14 +1,13 @@
 {
   "name": "versatiles-fonts",
-  "version": "0.0.4",
+  "version": "1.0.0",
   "scripts": {
-    "generate": "bin/generate.sh",
-    "release": "bin/release.sh"
+    "build": "bin/generate.sh"
   },
   "dependencies": {
     "@mapbox/glyph-pbf-composite": "^0.0.3",
-    "fontnik": "^0.7.0",
-    "work-faster": "^0.1.0"
+    "fontnik": "^0.7.2",
+    "work-faster": "^0.3.4"
   },
   "engines": {
     "node": ">=16"
