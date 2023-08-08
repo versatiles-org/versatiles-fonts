@@ -1,4 +1,6 @@
-# free font glyphs for map rendering
+# VersaTiles Fonts
+
+free font glyphs for map rendering
 
 ## install, generate and package glyphs
 
