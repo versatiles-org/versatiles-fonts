@@ -2,16 +2,22 @@
   "name": "versatiles-fonts",
   "version": "1.0.0",
   "scripts": {
-    "build": "node bin/convert_fonts.js",
-    "release": "bin/release.sh"
+    "build": "node bin/convert_fonts.js; bin/release.sh",
+    "release": "vrt release",
+    "upgrade": "npm-check-updates -u && rm -f package-lock.json && rm -rf node_modules; npm i"
   },
   "type": "module",
   "dependencies": {
     "@mapbox/glyph-pbf-composite": "^0.0.3",
     "fontnik": "^0.7.2",
+    "tar": "^6.2.1",
     "work-faster": "^0.3.4"
   },
   "engines": {
     "node": ">=16"
+  },
+  "devDependencies": {
+    "@versatiles/release-tool": "^1.2.3",
+    "npm-check-updates": "^16.14.18"
   }
 }
