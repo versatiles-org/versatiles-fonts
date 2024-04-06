@@ -6,7 +6,7 @@ import { basename, resolve } from 'node:path';
 import fontnik from 'fontnik';
 import glyphCompose from '@mapbox/glyph-pbf-composite';
 import { execSync } from 'node:child_process';
-
+import tar from 'tar';
 import 'work-faster';
 
 const inputDir = new URL('../font-sources', import.meta.url).pathname;
@@ -27,28 +27,29 @@ await fonts.forEachAsync(async font => {
 	progress = ' '.repeat(8 - progress.length) + progress;
 	process.stdout.write('\u001b[2K\r' + progress + ' - ' + font.name)
 
-	await makeGlyphs(font);
+	//await makeGlyphs(font);
 	sizePos += font.sizeIn;
 })
 process.stdout.write('\u001b[2K\r')
 
-let fontnames = fonts.map(f => f.name);
-writeFileSync(resolve(outputDir, 'fonts.json'), JSON.stringify(fontnames, null, '\t'));
-
-console.log('tar fonts');
-
-tar('fonts');
+pack('fonts', fonts);
 
 let fontFamilies = {};
-fonts.forEach(f => (fontFamilies[f.family] ??= []).push(f.name));
-for (let [family, names] of Object.entries(fontFamilies)) tar(family, names);
+fonts.forEach(f => (fontFamilies[f.family] ??= []).push(f));
+for (let [family, fonts] of Object.entries(fontFamilies)) pack(family, fonts);
 
 console.log('Finished')
 
-function tar(name, folders) {
+function pack(name, entries) {
 	console.log(`   ${name}.tar`)
+	console.log(entries);
 	let paths = folders ? folders.map(f => './' + f) : ['.'];
 	let cmd = `find ${paths.join(' ')} -name "*.pbf" -print0 | tar -cf ../${name}.tar --null --files-from -`;
+
+	//writeFileSync(
+	//	resolve(outputDir, 'fonts.json'),
+	//	JSON.stringify(fonts.map(f => f.name), null, '\t')
+	//);
 	execSync(cmd, { cwd: outputDir })
 }
 
@@ -60,34 +61,34 @@ function getFonts() {
 
 		let dirInFont = resolve(inputDir, dirName);
 		if (!lstatSync(dirInFont).isDirectory()) return;
-			let fonts = [];
+		let fonts = [];
 
-			let fontFile = resolve(dirInFont, 'fonts.json');
-			if (existsSync(fontFile)) {
-				fonts = JSON.parse(readFileSync(fontFile));
-			} else {
-				readdirSync(dirInFont).forEach(file => {
-					if (file.endsWith('.ttf') || file.endsWith('.otf')) {
-						// compatible font name generation with genfontgl
-						let name = basename(file);
-						name = name.replace(/\..*?$/, '');
-						name = name.replace(/\-/g, '');
-						name = name.replace(/([a-z0-9])([A-Z])/g, '$1 $2');
-						name = name.replace(/([A-Z])([A-Z][a-z])/g, '$1 $2');
-						name = name.replace(/\s+/, ' ').trim();
-						fonts.push({ name, sources: [basename(file)] });
-					}
-				});
-			}
+		let fontFile = resolve(dirInFont, 'fonts.json');
+		if (existsSync(fontFile)) {
+			fonts = JSON.parse(readFileSync(fontFile));
+		} else {
+			readdirSync(dirInFont).forEach(file => {
+				if (file.endsWith('.ttf') || file.endsWith('.otf')) {
+					// compatible font name generation with genfontgl
+					let name = basename(file);
+					name = name.replace(/\..*?$/, '');
+					name = name.replace(/\-/g, '');
+					name = name.replace(/([a-z0-9])([A-Z])/g, '$1 $2');
+					name = name.replace(/([A-Z])([A-Z][a-z])/g, '$1 $2');
+					name = name.replace(/\s+/, ' ').trim();
+					fonts.push({ name, sources: [basename(file)] });
+				}
+			});
+		}
 
-			// font.name should be lowercase+underscore
-			fonts.forEach(font => {
-				font.sources = font.sources.filter(s => !s.startsWith('//'));
+		// font.name should be lowercase+underscore
+		fonts.forEach(font => {
+			font.sources = font.sources.filter(s => !s.startsWith('//'));
 			font.slug = font.name.toLowerCase().replace(/\s/g, '_');
-				font.sizeIn = font.sources.reduce(
-					(sum, source) => sum + statSync(resolve(dirInFont, source)).size, 0
-				);
-				font.dirInFont = dirInFont;
+			font.sizeIn = font.sources.reduce(
+				(sum, source) => sum + statSync(resolve(dirInFont, source)).size, 0
+			);
+			font.dirInFont = dirInFont;
 			font.family = dirName;
 			font.dirOutFont = resolve(outputDir, font.slug);
 
