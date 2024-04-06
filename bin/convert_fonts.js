@@ -1,20 +1,19 @@
 #!/usr/bin/env node
 'use strict'
 
-import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
-import { basename, dirname, resolve } from 'node:path';
+import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { basename, resolve } from 'node:path';
 import fontnik from 'fontnik';
 import glyphCompose from '@mapbox/glyph-pbf-composite';
 import { execSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
 
 import 'work-faster';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const inputDir = resolve(__dirname, '../font-sources');
-const outputDir = resolve(__dirname, '../dist/fonts/');
+const inputDir = new URL('../font-sources', import.meta.url).pathname;
+const outputDir = new URL('../dist/fonts/', import.meta.url).pathname;
 
-if (!existsSync(outputDir)) mkdirSync(outputDir, { recursive: true });
+if (existsSync(outputDir)) rmSync(outputDir, { recursive: true, force: true });
+mkdirSync(outputDir, { recursive: true });
 
 console.log('scan for fonts');
 const fonts = getFonts();

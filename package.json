@@ -2,7 +2,7 @@
   "name": "versatiles-fonts",
   "version": "1.0.0",
   "scripts": {
-    "build": "bin/generate.sh",
+    "build": "node bin/convert_fonts.js",
     "release": "bin/release.sh"
   },
   "type": "module",
