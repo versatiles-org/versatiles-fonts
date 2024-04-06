@@ -59,7 +59,7 @@ function getFonts() {
 		if (dirName.startsWith('_')) return;
 
 		let dirInFont = resolve(inputDir, dirName);
-		if (lstatSync(dirInFont).isDirectory()) {
+		if (!lstatSync(dirInFont).isDirectory()) return;
 			let fonts = [];
 
 			let fontFile = resolve(dirInFont, 'fonts.json');
@@ -83,17 +83,46 @@ function getFonts() {
 			// font.name should be lowercase+underscore
 			fonts.forEach(font => {
 				font.sources = font.sources.filter(s => !s.startsWith('//'));
-				font.name = font.name.toLowerCase().replace(/\s/g, '_');
+			font.slug = font.name.toLowerCase().replace(/\s/g, '_');
 				font.sizeIn = font.sources.reduce(
 					(sum, source) => sum + statSync(resolve(dirInFont, source)).size, 0
 				);
 				font.dirInFont = dirInFont;
-				font.family = dirName.toLowerCase().replace(/\s/g, '_');
-				font.dirOutFont = resolve(outputDir, font.name)
+			font.family = dirName;
+			font.dirOutFont = resolve(outputDir, font.slug);
 
-				todos.push(font)
-			});
-		}
+			let variation = font.name;
+			if (!variation.startsWith(font.family)) throw Error();
+			variation = variation.slice(font.family.length).toLowerCase();
+			font.weight = extractVariation({
+				thin: 100,
+				'extra light': 200,
+				light: 300,
+				regular: 400,
+				medium: 500,
+				'semi bold': 600,
+				'semibold': 600,
+				'web bold': 700,
+				'extra bold': 800,
+				bold: 700,
+				black: 900
+			}, 400);
+			font.style = extractVariation({ italic: 'italic' });
+			font.variant = extractVariation({ caption: 'caption', narrow: 'narrow', condensed: 'condensed' });
+			if (variation.trim() !== '') throw Error(`can not find variation "${variation}" in name "${font.name}"`);
+
+			todos.push(font);
+
+			function extractVariation(lookup, defaultValue = 'normal') {
+				variation = variation.trim().replace(/\s{2,}/g, ' ');
+				for (const [key, value] of Object.entries(lookup)) {
+					if (!variation.includes(key)) continue;
+					variation = variation.replace(key, ' ');
+					return value;
+				}
+				return defaultValue;
+			}
+		});
 	});
 
 	return todos;
