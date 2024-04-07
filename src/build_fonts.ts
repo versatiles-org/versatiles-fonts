@@ -6,6 +6,7 @@ import { Font, getFonts } from './lib/fonts.ts';
 import { pack } from './lib/tar.ts';
 import { buildGlyphs, mergeGlyphs } from './lib/glyphs.ts';
 import { runParallel } from './lib/async.ts';
+import { Progress } from './lib/progress.ts';
 
 process.chdir(new URL('../', import.meta.url).pathname)
 
@@ -22,29 +23,24 @@ const fonts = getFonts('font-sources');//.filter(f => f.fontFace.family === 'Fir
 
 
 
-console.log('build glyphs');
 const fontSources = fonts.flatMap(f => f.sources);
-let sizePos = 0;
-let sizeSum = fontSources.reduce((s, f) => s + f.size, 0);
+let progress = new Progress('build glyphs', fontSources.reduce((s, f) => s + f.size, 0));
 await runParallel(fontSources.map(fontSource => (async () => {
 	await buildGlyphs(fontSource);
-	sizePos += fontSource.size;
-	let progress = (100 * sizePos / sizeSum).toFixed(1) + '%';
-	progress = ' '.repeat(8 - progress.length) + progress;
-	process.stdout.write(`\u001b[2K\r${progress}`)
+	progress.increase(fontSource.size);
 })));
-process.stdout.write('\u001b[2K\r')
+progress.finish();
 
-sizePos = 0;
-sizeSum = fonts.reduce((s, f) => s + f.glyphSize, 0);
+
+
+progress = new Progress('merge glyphs', fonts.reduce((s, f) => s + f.glyphSize, 0));
 await runParallel(fonts.map(font => (async () => {
 	await mergeGlyphs(font);
-	sizePos += font.glyphSize;
-	let progress = (100 * sizePos / sizeSum).toFixed(1) + '%';
-	progress = ' '.repeat(8 - progress.length) + progress;
-	process.stdout.write(`\u001b[2K\r${progress}`)
+	progress.increase(font.glyphSize);
 })));
-process.stdout.write('\u001b[2K\r')
+progress.finish();
+
+
 
 
 
