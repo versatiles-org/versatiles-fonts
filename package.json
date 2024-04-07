@@ -10,13 +10,16 @@
   "dependencies": {
     "@mapbox/glyph-pbf-composite": "^0.0.3",
     "fontnik": "^0.7.2",
-    "tar": "^6.2.1",
+    "tar-stream": "^3.1.7",
+    "tsx": "^4.7.2",
+    "typescript": "^5.4.4",
     "work-faster": "^0.3.4"
   },
   "engines": {
     "node": ">=16"
   },
   "devDependencies": {
+    "@types/node": "^20.12.5",
     "@versatiles/release-tool": "^1.2.3",
     "npm-check-updates": "^16.14.18"
   }
