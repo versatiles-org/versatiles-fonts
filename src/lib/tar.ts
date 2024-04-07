@@ -1,30 +1,32 @@
 
+import tar from 'tar-stream';
+import { createGzip } from 'node:zlib';
 import { Font } from './fonts.ts';
+import { createWriteStream } from 'node:fs';
+import { finished } from 'node:stream/promises';
 
-export async function pack(name: string, fonts: Font[]) {
-	console.log(`   ${name}.tar`)
-	console.log(fonts);
-	tar.create()
-	//let paths = folders ? folders.map(f => './' + f) : ['.'];
-	//let cmd = `find ${paths.join(' ')} -name "*.pbf" -print0 | tar -cf ../${name}.tar --null --files-from -`;
+export async function pack(filename: string, fonts: Font[]) {
+	if (!filename.endsWith('.tar.gz')) throw Error();
+	console.log(` - pack: ${filename}`);
+
+	const pack = tar.pack();
+
+	for (const font of fonts) {
+		if (!font.results) continue;
+		for (const file of font.results) {
+			pack.entry({ name: file.name }, file.buffer);
+		}
+	}
+
+	pack.finalize();
+	await finished(
+		pack
+			.pipe(createGzip({ level: 9 }))
+			.pipe(createWriteStream(filename))
+	);
 
 	//writeFileSync(
 	//	resolve(outputDir, 'fonts.json'),
 	//	JSON.stringify(fonts.map(f => f.name), null, '\t')
 	//);
-	//execSync(cmd, { cwd: outputDir })
-
-	/*
-	#!/usr/bin / env bash
-	cd "$(dirname "$0")"
-	set - e
-	
-	cd../ dist /
-	
-		echo "delete temporary glyphs"
-	rm - rf fonts
-	
-	echo "compress tar files"
-	gzip - 9f *.tar
-	*/
 }

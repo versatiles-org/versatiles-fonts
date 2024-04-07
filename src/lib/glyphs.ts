@@ -1,18 +1,17 @@
 import fontnik from 'fontnik';
 import glyphCompose from '@mapbox/glyph-pbf-composite';
-import 'work-faster';
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { Font } from './fonts.ts';
 import { resolve } from 'node:path';
 
 export async function makeGlyphs(font: Font) {
-	if (!existsSync(font.dirOutFont)) mkdirSync(font.dirOutFont);
-
 	const sourceFonts: Record<string, Buffer> = {};
 	font.sources.forEach(sourceName => {
 		sourceFonts[sourceName] = readFileSync(resolve(font.dirInFont, sourceName));
 	});
+
+	font.results = [];
 
 	let sizeSum = 0;
 	for (let start = 0; start < 65536; start += 256) {
@@ -37,8 +36,8 @@ export async function makeGlyphs(font: Font) {
 		let combined = glyphCompose.combine(results);
 		sizeSum += combined.length;
 
-		writeFileSync(resolve(font.dirOutFont, `${start}-${end}.pbf`), combined);
+		font.results.push({
+			name: `${font.fontFace.slug}/${start}-${end}.pbf`, buffer: combined
+		});
 	}
-
-	font.sizeOut = sizeSum;
 }

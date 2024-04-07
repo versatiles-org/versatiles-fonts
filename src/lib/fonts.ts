@@ -4,9 +4,8 @@ import { basename, resolve } from 'node:path';
 export interface Font {
 	sources: string[];
 	dirInFont: string;
-	dirOutFont: string;
 	sizeIn: number;
-	sizeOut: number;
+	results: null | { name: string; buffer: Buffer }[];
 	fontFace: FontFace;
 }
 export interface FontFace {
@@ -60,9 +59,9 @@ export function getFonts(inputDir: string, outputDir: string) {
 			todos.push({
 				sources,
 				sizeIn: sources.reduce((sum, source) => sum + statSync(resolve(dirInFont, source)).size, 0),
-				sizeOut: 0,
+				//sizeOut: 0,
 				dirInFont,
-				dirOutFont: resolve(outputDir, slug),
+				//dirOutFont: resolve(outputDir, slug),
 				fontFace: {
 					family,
 					slug,
@@ -70,7 +69,8 @@ export function getFonts(inputDir: string, outputDir: string) {
 					weight: extractVariation({ thin: 100, 'extra light': 200, light: 300, regular: 400, medium: 500, 'semi bold': 600, 'semibold': 600, 'web bold': 700, 'extra bold': 800, bold: 700, black: 900 }, 400),
 					style: extractVariation({ italic: 'italic' }, 'normal'),
 					variant: extractVariation({ caption: 'caption', narrow: 'narrow', condensed: 'condensed' }, 'normal'),
-				}
+				},
+				results: null,
 			});
 
 			if (variation.trim() !== '') throw Error(`can not find variation "${variation}" in name "${font.name}"`);
