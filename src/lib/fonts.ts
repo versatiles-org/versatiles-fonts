@@ -4,6 +4,7 @@ import { basename, resolve } from 'node:path';
 export interface FontSource {
 	filename: string;
 	size: number;
+	glyphSize: number;
 	glyphs: null | {
 		start: number;
 		end: number;
@@ -59,7 +60,7 @@ export function getFonts(inputDir: string) {
 			const sources: FontSource[] = font.sources.filter(s => !s.startsWith('//')).map(name => {
 				const filename = resolve(dirInFont, name);
 				const size = statSync(filename).size;
-				return { filename, size, glyphs: null }
+				return { filename, size, glyphs: null, glyphSize: 0 }
 			});
 			const name = font.name;
 			const slug = font.name.toLowerCase().replace(/\s/g, '_');

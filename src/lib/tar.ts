@@ -9,7 +9,6 @@ import { runParallel } from './async.ts';
 
 async function pack(filename: string, fonts: Font[]) {
 	if (!filename.endsWith('.tar.gz')) throw Error();
-	console.log(` - pack: ${filename}`);
 
 	const pack = tar.pack();
 
@@ -40,7 +39,7 @@ export class Packer {
 	}
 	async run() {
 		const progress = new Progress('pack fonts', this.todos.reduce((s, t) => s + t.size, 0))
-		runParallel(this.todos, async todo => {
+		await runParallel(this.todos, async todo => {
 			await pack(todo.filename, todo.fonts);
 			progress.increase(todo.size);
 		});

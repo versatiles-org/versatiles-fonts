@@ -47,4 +47,5 @@ export async function buildGlyphs(fontSource: FontSource) {
 	}
 
 	fontSource.glyphs = glyphs;
+	fontSource.glyphSize = glyphs.reduce((s, g) => s + g.buffer.length, 0);
 }
