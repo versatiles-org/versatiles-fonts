@@ -12,8 +12,8 @@ export async function pack(filename: string, fonts: Font[]) {
 	const pack = tar.pack();
 
 	for (const font of fonts) {
-		if (!font.results) continue;
-		for (const file of font.results) {
+		if (!font.glyphs) continue;
+		for (const file of font.glyphs) {
 			pack.entry({ name: file.name }, file.buffer);
 		}
 	}

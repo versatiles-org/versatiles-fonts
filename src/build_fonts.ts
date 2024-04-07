@@ -4,7 +4,7 @@
 import { existsSync, mkdirSync, rmSync } from 'node:fs';
 import { Font, getFonts } from './lib/fonts.ts';
 import { pack } from './lib/tar.ts';
-import { makeGlyphs } from './lib/glyphs.ts';
+import { buildGlyphs, mergeGlyphs } from './lib/glyphs.ts';
 import { runParallel } from './lib/async.ts';
 
 process.chdir(new URL('../', import.meta.url).pathname)
@@ -22,15 +22,27 @@ const fonts = getFonts('font-sources');//.filter(f => f.fontFace.family === 'Fir
 
 
 
-console.log('convert fonts');
+console.log('build glyphs');
+const fontSources = fonts.flatMap(f => f.sources);
 let sizePos = 0;
-let sizeSum = fonts.reduce((s, f) => s + f.sizeIn, 0);
-await runParallel(fonts.map(font => (async () => {
-	await makeGlyphs(font);
-	sizePos += font.sizeIn;
+let sizeSum = fontSources.reduce((s, f) => s + f.size, 0);
+await runParallel(fontSources.map(fontSource => (async () => {
+	await buildGlyphs(fontSource);
+	sizePos += fontSource.size;
 	let progress = (100 * sizePos / sizeSum).toFixed(1) + '%';
 	progress = ' '.repeat(8 - progress.length) + progress;
-	process.stdout.write(`\u001b[2K\r${progress} - ${font.fontFace.name}`)
+	process.stdout.write(`\u001b[2K\r${progress}`)
+})));
+process.stdout.write('\u001b[2K\r')
+
+sizePos = 0;
+sizeSum = fonts.reduce((s, f) => s + f.glyphSize, 0);
+await runParallel(fonts.map(font => (async () => {
+	await mergeGlyphs(font);
+	sizePos += font.glyphSize;
+	let progress = (100 * sizePos / sizeSum).toFixed(1) + '%';
+	progress = ' '.repeat(8 - progress.length) + progress;
+	process.stdout.write(`\u001b[2K\r${progress}`)
 })));
 process.stdout.write('\u001b[2K\r')
 

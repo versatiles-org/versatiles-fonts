@@ -1,12 +1,19 @@
 import { existsSync, lstatSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { basename, resolve } from 'node:path';
 
+export interface FontSource {
+	filename: string;
+	size: number;
+	glyphs: null | {
+		start: number;
+		end: number;
+		buffer: Buffer
+	}[]
+}
 export interface Font {
-	sources: string[];
-	dirInFont: string;
-	sizeIn: number;
-	sizeOut: number;
-	results: null | { name: string; buffer: Buffer }[];
+	sources: FontSource[];
+	glyphs: null | { name: string; buffer: Buffer }[];
+	glyphSize: number;
 	fontFace: FontFace;
 }
 export interface FontFace {
@@ -49,7 +56,11 @@ export function getFonts(inputDir: string) {
 
 		// font.name should be lowercase+underscore
 		fonts.forEach(font => {
-			const sources = font.sources.filter(s => !s.startsWith('//'));
+			const sources: FontSource[] = font.sources.filter(s => !s.startsWith('//')).map(name => {
+				const filename = resolve(dirInFont, name);
+				const size = statSync(filename).size;
+				return { filename, size, glyphs: null }
+			});
 			const name = font.name;
 			const slug = font.name.toLowerCase().replace(/\s/g, '_');
 			const family = dirName;
@@ -60,10 +71,6 @@ export function getFonts(inputDir: string) {
 
 			todos.push({
 				sources,
-				sizeIn: sources.reduce((sum, source) => sum + statSync(resolve(dirInFont, source)).size, 0),
-				//sizeOut: 0,
-				dirInFont,
-				//dirOutFont: resolve(outputDir, slug),
 				fontFace: {
 					family,
 					familySlug: family.toLowerCase().replace(/\s/g, '_'),
@@ -73,8 +80,8 @@ export function getFonts(inputDir: string) {
 					style: extractVariation({ italic: 'italic' }, 'normal'),
 					variant: extractVariation({ caption: 'caption', narrow: 'narrow', condensed: 'condensed' }, 'normal'),
 				},
-				sizeOut: 0,
-				results: null,
+				glyphs: null,
+				glyphSize: 0,
 			});
 
 			if (variation.trim() !== '') throw Error(`can not find variation "${variation}" in name "${font.name}"`);
