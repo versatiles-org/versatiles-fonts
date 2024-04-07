@@ -5,6 +5,7 @@ export interface Font {
 	sources: string[];
 	dirInFont: string;
 	sizeIn: number;
+	sizeOut: number;
 	results: null | { name: string; buffer: Buffer }[];
 	fontFace: FontFace;
 }
@@ -12,12 +13,13 @@ export interface FontFace {
 	slug: string;
 	name: string;
 	family: string;
+	familySlug: string;
 	weight: 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900;
 	style: 'italic' | 'normal';
 	variant: 'caption' | 'narrow' | 'condensed' | 'normal';
 }
 
-export function getFonts(inputDir: string, outputDir: string) {
+export function getFonts(inputDir: string) {
 	const todos = new Array<Font>();
 
 	readdirSync(inputDir).forEach(dirName => {
@@ -64,12 +66,14 @@ export function getFonts(inputDir: string, outputDir: string) {
 				//dirOutFont: resolve(outputDir, slug),
 				fontFace: {
 					family,
+					familySlug: family.toLowerCase().replace(/\s/g, '_'),
 					slug,
 					name,
 					weight: extractVariation({ thin: 100, 'extra light': 200, light: 300, regular: 400, medium: 500, 'semi bold': 600, 'semibold': 600, 'web bold': 700, 'extra bold': 800, bold: 700, black: 900 }, 400),
 					style: extractVariation({ italic: 'italic' }, 'normal'),
 					variant: extractVariation({ caption: 'caption', narrow: 'narrow', condensed: 'condensed' }, 'normal'),
 				},
+				sizeOut: 0,
 				results: null,
 			});
 

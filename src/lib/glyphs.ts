@@ -1,43 +1,40 @@
 import fontnik from 'fontnik';
 import glyphCompose from '@mapbox/glyph-pbf-composite';
-
 import { readFileSync } from 'node:fs';
 import { Font } from './fonts.ts';
 import { resolve } from 'node:path';
 
 export async function makeGlyphs(font: Font) {
-	const sourceFonts: Record<string, Buffer> = {};
-	font.sources.forEach(sourceName => {
-		sourceFonts[sourceName] = readFileSync(resolve(font.dirInFont, sourceName));
-	});
+	const results = new Map<number, { start: number; end: number; buffers: Buffer[] }>();
+	for (const source of font.sources) {
+		const bufferIn = readFileSync(resolve(font.dirInFont, source));
 
-	font.results = [];
+		for (let start = 0; start < 65536; start += 256) {
+			const end = start + 255;
 
-	let sizeSum = 0;
-	for (let start = 0; start < 65536; start += 256) {
-		const end = start + 255;
-
-		let results = await Promise.all(font.sources.map(sourceName => {
-			let source = sourceFonts[sourceName];
-			if (!source) throw Error(`[${font.fontFace.name}] Source "%{sourceName}" not found`);
-
-			return new Promise((resolve, reject) => {
+			const bufferOut = await new Promise<Buffer>(resolve => {
 				fontnik.range(
-					{ font: source, start, end },
+					{ font: bufferIn, start, end },
 					(err: any, data: unknown) => {
-						if (err) reject(); else resolve(data);
+						if (err) throw err;
+						resolve(data as Buffer);
 					}
 				);
-			});
-		}))
-
-		results = results.filter(r => r);
-
-		let combined = glyphCompose.combine(results);
-		sizeSum += combined.length;
-
-		font.results.push({
-			name: `${font.fontFace.slug}/${start}-${end}.pbf`, buffer: combined
-		});
+			})
+			if (bufferOut) {
+				const entry = results.get(start);
+				if (entry) {
+					entry.buffers.push(bufferOut);
+				} else {
+					results.set(start, { start, end, buffers: [bufferOut] });
+				}
+			}
+		}
 	}
+
+	font.results = Array.from(results.values()).map(entry => ({
+		name: `${font.fontFace.slug}/${entry.start}-${entry.end}.pbf`,
+		buffer: glyphCompose.combine(entry.buffers),
+	}));
+	font.sizeOut = font.results.reduce((s, e) => s + e.buffer.length, 0);
 }

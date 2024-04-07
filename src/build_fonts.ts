@@ -18,7 +18,7 @@ mkdirSync('dist', { recursive: true });
 
 
 console.log('scan for fonts');
-const fonts = getFonts('font-sources', 'dist/fonts/');//.filter(f => f.fontFace.family === 'Fira Sans');
+const fonts = getFonts('font-sources');//.filter(f => f.fontFace.family === 'Fira Sans');
 
 
 
@@ -37,17 +37,17 @@ process.stdout.write('\u001b[2K\r')
 
 
 console.log('pack fonts');
-await pack('dist/fonts.tar.gz', fonts);
+const todos: [string, Font[]][] = []
+todos.push(['dist/fonts.tar.gz', fonts]);
 
-const fontFamilies = new Map<string, Font[]>();
+const fontFamilies: Record<string, Font[]> = {};
 fonts.forEach(f => {
 	const key = f.fontFace.family;
-	const entry = fontFamilies.get(key);
-	if (entry) return entry.push(f);
-	fontFamilies.set(key, [f]);
+	if (fontFamilies[key]?.push(f)) return;
+	fontFamilies[key] = [f];
 })
 
-for (const [family, fontSubset] of fontFamilies.entries()) {
+for (const [family, fontSubset] of Object.entries(fontFamilies)) {
 	await pack(`dist/${family}.tar.gz`, fontSubset);
 }
 
