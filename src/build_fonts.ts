@@ -3,7 +3,7 @@
 
 import { existsSync, mkdirSync, rmSync } from 'node:fs';
 import { Font, getFonts } from './lib/fonts.ts';
-import { pack } from './lib/tar.ts';
+import { Packer } from './lib/tar.ts';
 import { buildGlyphs, mergeGlyphs } from './lib/glyphs.ts';
 import { runParallel } from './lib/async.ts';
 import { Progress } from './lib/progress.ts';
@@ -25,28 +25,26 @@ const fonts = getFonts('font-sources');//.filter(f => f.fontFace.family === 'Fir
 
 const fontSources = fonts.flatMap(f => f.sources);
 let progress = new Progress('build glyphs', fontSources.reduce((s, f) => s + f.size, 0));
-await runParallel(fontSources.map(fontSource => (async () => {
+await runParallel(fontSources, async fontSource => {
 	await buildGlyphs(fontSource);
 	progress.increase(fontSource.size);
-})));
+});
 progress.finish();
 
 
 
 progress = new Progress('merge glyphs', fonts.reduce((s, f) => s + f.glyphSize, 0));
-await runParallel(fonts.map(font => (async () => {
+await runParallel(fonts, async font => {
 	await mergeGlyphs(font);
 	progress.increase(font.glyphSize);
-})));
+});
 progress.finish();
 
 
 
 
-
-console.log('pack fonts');
-const todos: [string, Font[]][] = []
-todos.push(['dist/fonts.tar.gz', fonts]);
+const packer = new Packer();
+packer.add('dist/fonts.tar.gz', fonts);
 
 const fontFamilies: Record<string, Font[]> = {};
 fonts.forEach(f => {
@@ -54,10 +52,11 @@ fonts.forEach(f => {
 	if (fontFamilies[key]?.push(f)) return;
 	fontFamilies[key] = [f];
 })
-
 for (const [family, fontSubset] of Object.entries(fontFamilies)) {
-	await pack(`dist/${family}.tar.gz`, fontSubset);
+	packer.add(`dist/${family}.tar.gz`, fontSubset)
 }
+
+packer.run();
 
 
 

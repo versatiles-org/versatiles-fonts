@@ -2,14 +2,14 @@ import { cpus } from 'node:os';
 
 const maxConcurrency = cpus().length;
 
-export async function runParallel(asyncList: ((() => Promise<void>) | Promise<void>)[]): Promise<void> {
+export async function runParallel<T>(items: T[], cb: ((item: T) => Promise<void>)): Promise<void> {
 	let count = 0;
 	let listener: null | (() => void) = null;
 
-	for (const func of asyncList) {
+	for (const item of items) {
 		if (count >= maxConcurrency) await waitTillLowerThan(maxConcurrency);
 		count++;
-		const promise = (typeof func === 'function') ? func() : func;
+		const promise = cb(item);
 		promise.then(() => {
 			count--;
 			if (listener) listener();

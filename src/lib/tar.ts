@@ -4,8 +4,10 @@ import { createGzip } from 'node:zlib';
 import { Font } from './fonts.ts';
 import { createWriteStream } from 'node:fs';
 import { finished } from 'node:stream/promises';
+import { Progress } from './progress.ts';
+import { runParallel } from './async.ts';
 
-export async function pack(filename: string, fonts: Font[]) {
+async function pack(filename: string, fonts: Font[]) {
 	if (!filename.endsWith('.tar.gz')) throw Error();
 	console.log(` - pack: ${filename}`);
 
@@ -29,4 +31,19 @@ export async function pack(filename: string, fonts: Font[]) {
 	//	resolve(outputDir, 'fonts.json'),
 	//	JSON.stringify(fonts.map(f => f.name), null, '\t')
 	//);
+}
+
+export class Packer {
+	readonly todos: { filename: string; fonts: Font[]; size: number }[] = [];
+	add(filename: string, fonts: Font[]) {
+		this.todos.push({ filename, fonts, size: fonts.reduce((s, f) => s + f.glyphSize, 0) })
+	}
+	async run() {
+		const progress = new Progress('pack fonts', this.todos.reduce((s, t) => s + t.size, 0))
+		runParallel(this.todos, async todo => {
+			await pack(todo.filename, todo.fonts);
+			progress.increase(todo.size);
+		});
+		progress.finish();
+	}
 }
