@@ -33,6 +33,7 @@ export async function buildAllGlyphs(fonts: FontSourcesWrapper[]): Promise<FontG
 			}
 		}
 	}
+	fontRanges.sort((a, b) => Math.random() - 0.5);
 
 	const fontGlyphsLookup = new Map<string, { fontFace: FontFace; start: number; end: number; buffers: Buffer[], size: number }>();
 

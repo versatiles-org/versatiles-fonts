@@ -30,12 +30,12 @@ export class Progress {
 	}
 
 	private render() {
-		const timeLeft = (Date.now() - this.timeStart) * (this.maxValue - this.value) / this.value / 1000;
-		const eta = [
-			Math.floor(timeLeft / 60),
-			(100 + Math.floor(timeLeft) % 60).toFixed(0).slice(1),
-		].join(':')
+		let eta = '';
+		if (this.value > this.maxValue / 100) {
+			const timeLeft = (Date.now() - this.timeStart) * (this.maxValue - this.value) / this.value / 1000;
+			eta = `- ${Math.floor(timeLeft / 60)}:${(100 + Math.floor(timeLeft) % 60).toFixed(0).slice(1)}`;
+		}
 		const progress = (100 * this.value / this.maxValue).toFixed(1);
-		process.stdout.write(`\u001b[2K\r${this.msg}: ${progress} % - ${eta}`);
+		process.stdout.write(`\u001b[2K\r${this.msg}: ${progress}% ${eta}`);
 	}
 }
