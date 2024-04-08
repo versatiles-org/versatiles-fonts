@@ -13,7 +13,7 @@ for (let start = 0; start < 65536; start += 256) {
 }
 
 export interface FontGlyphsWrapper {
-	glyphs: { filename: string, buffer: Buffer }[];
+	glyphs: { filename: string, buffer: Buffer, start: number }[];
 	glyphSize: number;
 	fontFace: FontFace;
 }
@@ -75,11 +75,13 @@ export async function buildAllGlyphs(fonts: FontSourcesWrapper[]): Promise<FontG
 	const progress2 = new Progress('merge glyphs', fontGlyphsList.reduce((s, f) => s + f.size, 0));
 	await runParallel(fontGlyphsList, async ({ fontFace, start, end, buffers, size }) => {
 		const filename = `${fontFace.fontId}/${start}-${end}.pbf`;
-		const buffer = await new Promise<Buffer>(resolve => fontnik.composite(buffers, (err, buffer) => {
-			if (err) throw Error(err);
-			resolve(buffer);
-		}));
-		const glyph = { filename, buffer };
+		const buffer = await new Promise<Buffer>(resolve => {
+			fontnik.composite(buffers, (err, buffer) => {
+				if (err) throw Error(err);
+				resolve(buffer);
+			})
+		});
+		const glyph = { filename, buffer, start };
 		const key = fontFace.fontId;
 		const entry = fontGlyphsWrappers.get(key);
 		if (entry) {
