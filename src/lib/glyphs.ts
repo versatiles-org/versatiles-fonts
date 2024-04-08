@@ -1,11 +1,17 @@
 import fontnik from 'fontnik';
 import glyphCompose from '@mapbox/glyph-pbf-composite';
 import { readFileSync, statSync } from 'node:fs';
-import { FontFace, FontGlyphsWrapper, FontSourcesWrapper } from './fonts.ts';
+import { FontFace, FontSourcesWrapper } from './fonts.ts';
 import { Progress } from './progress.ts';
 import { runParallel } from './async.ts';
 
 
+
+export interface FontGlyphsWrapper {
+	glyphs: { filename: string, buffer: Buffer }[];
+	glyphSize: number;
+	fontFace: FontFace;
+}
 
 export async function buildAllGlyphs(fonts: FontSourcesWrapper[]): Promise<FontGlyphsWrapper[]> {
 	const fontSources = fonts.flatMap(font => font.sources.map(filename => ({
@@ -45,7 +51,7 @@ export async function buildAllGlyphs(fonts: FontSourcesWrapper[]): Promise<FontG
 	const fontGlyphsList = Array.from(fontGlyphsLookup.values());
 	const fontGlyphsWrappers = new Map<string, FontGlyphsWrapper>();
 	let progress2 = new Progress('merge glyphs', fontGlyphsList.reduce((s, f) => s + f.size, 0));
-	await runParallel(fontGlyphsList, async ({ fontFace, start, end, buffers, size }) => {
+	fontGlyphsList.forEach(({ fontFace, start, end, buffers, size }) => {
 		const filename = `${fontFace.fontId}/${start}-${end}.pbf`;
 		const buffer = glyphCompose.combine(buffers);
 		const glyph = { filename, buffer };

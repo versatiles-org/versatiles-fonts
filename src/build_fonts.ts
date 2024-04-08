@@ -2,30 +2,29 @@
 'use strict'
 
 import { existsSync, mkdirSync, rmSync } from 'node:fs';
-import { FontGlyphsWrapper, getFonts as getFontSources } from './lib/fonts.ts';
-import { Packer } from './lib/tar.ts';
-import { buildAllGlyphs } from './lib/glyphs.ts';
-
-process.chdir(new URL('../', import.meta.url).pathname)
+import { getFontSources } from './lib/fonts.ts';
+import { TarPacker } from './lib/tar.ts';
+import { FontGlyphsWrapper, buildAllGlyphs } from './lib/glyphs.ts';
 
 
 
 console.log('prepare folder');
+process.chdir(new URL('../', import.meta.url).pathname)
 if (existsSync('dist')) rmSync('dist', { recursive: true, force: true });
 mkdirSync('dist', { recursive: true });
 
 
 
 console.log('scan for fonts');
-const fontSources = getFontSources('font-sources');//.filter(f => f.fontFace.family === 'Fira Sans');
+const fontSources = getFontSources('font-sources');
+
 
 
 const fontGlyphs = await buildAllGlyphs(fontSources);
 
 
 
-
-const packer = new Packer();
+const packer = new TarPacker();
 packer.add('dist/fonts.tar.gz', fontGlyphs);
 
 const fontFamilies: Record<string, FontGlyphsWrapper[]> = {};

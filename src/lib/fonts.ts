@@ -1,14 +1,8 @@
-import { existsSync, lstatSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, lstatSync, readFileSync, readdirSync } from 'node:fs';
 import { basename, resolve } from 'node:path';
 
 export interface FontSourcesWrapper {
 	sources: string[];
-	fontFace: FontFace;
-}
-
-export interface FontGlyphsWrapper {
-	glyphs: { filename: string, buffer: Buffer }[];
-	glyphSize: number;
 	fontFace: FontFace;
 }
 
@@ -22,7 +16,7 @@ export interface FontFace {
 	variant: 'caption' | 'narrow' | 'condensed' | 'normal';
 }
 
-export function getFonts(inputDir: string): FontSourcesWrapper[] {
+export function getFontSources(inputDir: string): FontSourcesWrapper[] {
 	const todos = new Array<FontSourcesWrapper>();
 
 	readdirSync(inputDir).forEach(dirName => {
