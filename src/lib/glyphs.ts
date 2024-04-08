@@ -1,5 +1,4 @@
 import fontnik from 'fontnik';
-import glyphCompose from '@mapbox/glyph-pbf-composite';
 import { readFileSync, statSync } from 'node:fs';
 import { FontFace, FontSourcesWrapper } from './fonts.ts';
 import { Progress } from './progress.ts';
@@ -25,7 +24,16 @@ export async function buildAllGlyphs(fonts: FontSourcesWrapper[]): Promise<FontG
 
 	let progress1 = new Progress('build glyphs', fontSources.reduce((s, f) => s + f.size, 0));
 	await runParallel(fontSources, async ({ filename, fontFace, size }) => {
-		const glyphs = await buildGlyphs(filename);
+		const bufferIn = readFileSync(filename);
+		try {
+			await verifyGlyphsStyle(bufferIn, fontFace);
+		} catch (err) {
+			console.error('   for file:', filename);
+			console.error('   for fontFace:', fontFace);
+			throw err;
+		}
+
+		const glyphs = await buildGlyphs(bufferIn);
 
 		for (const glyph of glyphs) {
 			const key = fontFace.fontId + ':' + glyph.start;
@@ -48,12 +56,17 @@ export async function buildAllGlyphs(fonts: FontSourcesWrapper[]): Promise<FontG
 	});
 	progress1.finish();
 
+
+
 	const fontGlyphsList = Array.from(fontGlyphsLookup.values());
 	const fontGlyphsWrappers = new Map<string, FontGlyphsWrapper>();
 	let progress2 = new Progress('merge glyphs', fontGlyphsList.reduce((s, f) => s + f.size, 0));
-	fontGlyphsList.forEach(({ fontFace, start, end, buffers, size }) => {
+	await runParallel(fontGlyphsList, async ({ fontFace, start, end, buffers, size }) => {
 		const filename = `${fontFace.fontId}/${start}-${end}.pbf`;
-		const buffer = glyphCompose.combine(buffers);
+		const buffer = await new Promise<Buffer>(resolve => fontnik.composite(buffers, (err, buffer) => {
+			if (err) throw Error(err);
+			resolve(buffer);
+		}));
 		const glyph = { filename, buffer };
 		const key = fontFace.fontId;
 		const entry = fontGlyphsWrappers.get(key);
@@ -72,8 +85,7 @@ export async function buildAllGlyphs(fonts: FontSourcesWrapper[]): Promise<FontG
 }
 
 
-async function buildGlyphs(filename: string) {
-	const bufferIn = readFileSync(filename);
+async function buildGlyphs(bufferIn: Buffer) {
 	const glyphs: { start: number; end: number; buffer: Buffer }[] = [];
 
 	for (let start = 0; start < 65536; start += 256) {
@@ -82,9 +94,9 @@ async function buildGlyphs(filename: string) {
 		const buffer = await new Promise<Buffer>(resolve => {
 			fontnik.range(
 				{ font: bufferIn, start, end },
-				(err: any, data: unknown) => {
+				(err, buffer) => {
 					if (err) throw err;
-					resolve(data as Buffer);
+					resolve(buffer);
 				}
 			);
 		})
@@ -92,4 +104,22 @@ async function buildGlyphs(filename: string) {
 	}
 
 	return glyphs;
+}
+
+async function verifyGlyphsStyle(bufferIn: Buffer, fontFace: FontFace) {
+	const result = await new Promise<{ family_name: string; style_name: string; points: number[]; }[]>(resolve => {
+		fontnik.load(bufferIn, (err, points) => {
+			if (err) throw Error(err);
+			resolve(points);
+		})
+	});
+	if (result.length !== 1) throw Error();
+	const definition = result[0];
+	if (!definition.family_name.startsWith(fontFace.familyName)) {
+		throw Error(`Family name "${definition.family_name}" does not start with "${fontFace.familyName}"`)
+	}
+	if (definition.style_name !== fontFace.styleName) {
+		console.log(result);
+		throw Error(`Style name "${definition.style_name}" !== "${fontFace.styleName}"`)
+	}
 }

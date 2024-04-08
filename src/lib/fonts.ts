@@ -14,6 +14,7 @@ export interface FontFace {
 	weight: 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900;
 	style: 'italic' | 'normal';
 	variant: 'caption' | 'narrow' | 'condensed' | 'normal';
+	styleName: string;
 }
 
 export function getFontSources(inputDir: string): FontSourcesWrapper[] {
@@ -46,42 +47,74 @@ export function getFontSources(inputDir: string): FontSourcesWrapper[] {
 
 		// font.name should be lowercase+underscore
 		fonts.forEach(font => {
-			const fontId = font.name.toLowerCase().replace(/\s/g, '_');
-			const familyName = dirName;
 			const sources = font.sources
 				.filter(filename => !filename.startsWith('#'))
 				.map(filename => resolve(dirInFont, filename));
 
-			let variation = font.name;
-			if (!variation.startsWith(familyName)) throw Error();
-			variation = variation.slice(familyName.length).toLowerCase();
+			if (sources.length <= 0) throw Error();
 
 			todos.push({
 				sources,
-				fontFace: {
-					fontName: font.name,
-					fontId,
-					familyName,
-					familyId: familyName.toLowerCase().replace(/\s/g, '_'),
-					weight: extractVariation({ thin: 100, 'extra light': 200, light: 300, regular: 400, medium: 500, 'semi bold': 600, 'semibold': 600, 'web bold': 700, 'extra bold': 800, bold: 700, black: 900 }, 400),
-					style: extractVariation({ italic: 'italic' }, 'normal'),
-					variant: extractVariation({ caption: 'caption', narrow: 'narrow', condensed: 'condensed' }, 'normal'),
-				}
+				fontFace: getFontFace(font.name, dirName),
 			});
-
-			if (variation.trim() !== '') throw Error(`can not find variation "${variation}" in name "${font.name}"`);
-
-			function extractVariation<T>(lookup: Record<string, T>, defaultValue: T): T {
-				variation = variation.trim().replace(/\s{2,}/g, ' ');
-				for (const [key, value] of Object.entries(lookup)) {
-					if (!variation.includes(key)) continue;
-					variation = variation.replace(key, ' ');
-					return value;
-				}
-				return defaultValue;
-			}
 		});
 	});
 
 	return todos;
+}
+
+function getFontFace(fontName: string, familyName: string): FontFace {
+	let variation = fontName;
+	if (!variation.startsWith(familyName)) throw Error();
+	variation = variation.slice(familyName.length).toLowerCase();
+
+	const weight: FontFace['weight'] = extractVariation({ thin: 100, 'extra light': 200, light: 300, regular: 400, medium: 500, 'semi bold': 600, 'semibold': 600, 'web bold': 700, 'extra bold': 800, bold: 700, black: 900 }, 400);
+	const style: FontFace['style'] = extractVariation({ italic: 'italic' }, 'normal');
+	const variant: FontFace['variant'] = extractVariation({ caption: 'caption', narrow: 'narrow', condensed: 'condensed' }, 'normal');
+
+	const styleParts: string[] = [];
+	switch (weight) {
+		case 100: styleParts.push('Thin'); break;
+		case 200: styleParts.push('ExtraLight'); break;
+		case 300: styleParts.push('Light'); break;
+		case 500: styleParts.push('Medium'); break;
+		case 600: styleParts.push('SemiBold'); break;
+		case 700: styleParts.push('Bold'); break;
+		case 800: styleParts.push('ExtraBold'); break;
+		case 900: styleParts.push('Black'); break;
+	}
+	switch (style) {
+		case 'italic': styleParts.push('Italic'); break;
+	}
+	switch (variant) {
+		case 'caption': styleParts.push('Caption'); break;
+		case 'narrow': styleParts.push('Narrow'); break;
+		case 'condensed': styleParts.push('Condensed'); break;
+	}
+	const styleName = (styleParts.length > 0) ? styleParts.join(' ') : 'Regular';
+
+	const fontFace: FontFace = {
+		fontName,
+		fontId: fontName.toLowerCase().replace(/\s/g, '_'),
+		familyName,
+		familyId: familyName.toLowerCase().replace(/\s/g, '_'),
+		weight,
+		style,
+		variant,
+		styleName,
+	}
+
+	if (variation.trim() !== '') throw Error(`can not find variation "${variation}" in name "${fontName}"`);
+
+	return fontFace;
+
+	function extractVariation<T>(lookup: Record<string, T>, defaultValue: T): T {
+		variation = variation.trim().replace(/\s{2,}/g, ' ');
+		for (const [key, value] of Object.entries(lookup)) {
+			if (!variation.includes(key)) continue;
+			variation = variation.replace(key, ' ');
+			return value;
+		}
+		return defaultValue;
+	}
 }

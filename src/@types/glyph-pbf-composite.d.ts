@@ -1,1 +1,0 @@
-declare module '@mapbox/glyph-pbf-composite';
