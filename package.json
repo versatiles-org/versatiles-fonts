@@ -4,7 +4,9 @@
   "private": true,
   "scripts": {
     "build": "tsx src/build_fonts.ts",
+    "check": "npm run test",
     "release": "vrt release-npm",
+    "test": "echo 'in confidence we trust'",
     "upgrade": "npm-check-updates -u && rm -f package-lock.json && rm -rf node_modules; npm i"
   },
   "type": "module",
