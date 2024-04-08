@@ -13,7 +13,6 @@ export interface FontFace {
 	familyId: string;
 	weight: 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900;
 	style: 'italic' | 'normal';
-	variant: 'caption' | 'narrow' | 'condensed' | 'normal';
 	styleName: string;
 }
 
@@ -37,7 +36,8 @@ export function getFontSources(inputDir: string): FontSourcesWrapper[] {
 					let name = basename(file);
 					name = name.replace(/\..*?$/, '');
 					name = name.replace(/\-/g, '');
-					name = name.replace(/([a-z0-9])([A-Z])/g, '$1 $2');
+					name = name.replace(/_/g, ' ');
+					name = name.replace(/([a-z0-9])([A-Z0-9])/g, '$1 $2');
 					name = name.replace(/([A-Z])([A-Z][a-z])/g, '$1 $2');
 					name = name.replace(/\s+/, ' ').trim();
 					fonts.push({ name, sources: [basename(file)] });
@@ -65,12 +65,11 @@ export function getFontSources(inputDir: string): FontSourcesWrapper[] {
 
 function getFontFace(fontName: string, familyName: string): FontFace {
 	let variation = fontName;
-	if (!variation.startsWith(familyName)) throw Error();
+	if (!variation.startsWith(familyName)) throw Error(`fontName "${fontName}" does not start with familyName "${familyName}"`);
 	variation = variation.slice(familyName.length).toLowerCase();
 
 	const weight: FontFace['weight'] = extractVariation({ thin: 100, 'extra light': 200, light: 300, regular: 400, medium: 500, 'semi bold': 600, 'semibold': 600, 'web bold': 700, 'extra bold': 800, bold: 700, black: 900 }, 400);
 	const style: FontFace['style'] = extractVariation({ italic: 'italic' }, 'normal');
-	const variant: FontFace['variant'] = extractVariation({ caption: 'caption', narrow: 'narrow', condensed: 'condensed' }, 'normal');
 
 	const styleParts: string[] = [];
 	switch (weight) {
@@ -86,11 +85,6 @@ function getFontFace(fontName: string, familyName: string): FontFace {
 	switch (style) {
 		case 'italic': styleParts.push('Italic'); break;
 	}
-	switch (variant) {
-		case 'caption': styleParts.push('Caption'); break;
-		case 'narrow': styleParts.push('Narrow'); break;
-		case 'condensed': styleParts.push('Condensed'); break;
-	}
 	const styleName = (styleParts.length > 0) ? styleParts.join(' ') : 'Regular';
 
 	const fontFace: FontFace = {
@@ -100,7 +94,6 @@ function getFontFace(fontName: string, familyName: string): FontFace {
 		familyId: familyName.toLowerCase().replace(/\s/g, '_'),
 		weight,
 		style,
-		variant,
 		styleName,
 	}
 
