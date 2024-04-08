@@ -27,11 +27,10 @@ async function pack(filename: string, fonts: FontGlyphsWrapper[]) {
 	pack.entry({ name: 'fonts.json' }, JSON.stringify(fonts.map(f => f.fontFace.fontId), null, '\t'));
 
 	type VFontFamilies = Record<string, VFontFamily>;
-	interface VFontFamily { name: string, fontFace: VFontFace[] };
+	interface VFontFamily { name: string, fontFace: Record<string, VFontFace> };
 	interface VFontFace {
-		slug: string;
-		styleName: string;
-		style: 'italic' | 'normal';
+		name: string;
+		italic: boolean;
 		weight: 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900;
 	}
 
@@ -42,15 +41,14 @@ async function pack(filename: string, fonts: FontGlyphsWrapper[]) {
 		if (!fontFamilies[fontFace.familyId]) {
 			fontFamilies[fontFace.familyId] = {
 				name: fontFace.familyName,
-				fontFace: [],
+				fontFace: {},
 			}
 		}
-		fontFamilies[fontFace.familyId].fontFace.push({
-			slug: fontFace.fontId,
-			styleName: fontFace.styleName,
-			style: fontFace.style,
+		fontFamilies[fontFace.familyId].fontFace[fontFace.fontId] = {
+			name: fontFace.styleName,
+			italic: fontFace.italic,
 			weight: fontFace.weight,
-		})
+		}
 	})
 	pack.entry({ name: 'font_families.json' }, JSON.stringify(fontFamilies, null, '\t'));
 

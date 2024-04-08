@@ -12,7 +12,7 @@ export interface FontFace {
 	familyName: string;
 	familyId: string;
 	weight: 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900;
-	style: 'italic' | 'normal';
+	italic: boolean;
 	styleName: string;
 }
 
@@ -69,7 +69,7 @@ function getFontFace(fontName: string, familyName: string): FontFace {
 	variation = variation.slice(familyName.length).toLowerCase();
 
 	const weight: FontFace['weight'] = extractVariation({ thin: 100, 'extra light': 200, light: 300, regular: 400, medium: 500, 'semi bold': 600, 'semibold': 600, 'web bold': 700, 'extra bold': 800, bold: 700, black: 900 }, 400);
-	const style: FontFace['style'] = extractVariation({ italic: 'italic' }, 'normal');
+	const italic: FontFace['italic'] = extractVariation({ italic: true }, false);
 
 	const styleParts: string[] = [];
 	switch (weight) {
@@ -82,9 +82,7 @@ function getFontFace(fontName: string, familyName: string): FontFace {
 		case 800: styleParts.push('Extra Bold'); break;
 		case 900: styleParts.push('Black'); break;
 	}
-	switch (style) {
-		case 'italic': styleParts.push('Italic'); break;
-	}
+	if (italic) styleParts.push('Italic');
 	const styleName = (styleParts.length > 0) ? styleParts.join(' ') : 'Regular';
 
 	const fontFace: FontFace = {
@@ -92,9 +90,9 @@ function getFontFace(fontName: string, familyName: string): FontFace {
 		fontId: fontName.toLowerCase().replace(/\s/g, '_'),
 		familyName,
 		familyId: familyName.toLowerCase().replace(/\s/g, '_'),
-		weight,
-		style,
 		styleName,
+		italic,
+		weight,
 	}
 
 	if (variation.trim() !== '') throw Error(`can not find variation "${variation}" in name "${fontName}"`);
