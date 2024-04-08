@@ -1,9 +1,10 @@
 {
   "name": "versatiles-fonts",
   "version": "1.0.0",
+  "private": true,
   "scripts": {
     "build": "tsx src/build_fonts.ts",
-    "release": "vrt release",
+    "release": "vrt release-npm",
     "upgrade": "npm-check-updates -u && rm -f package-lock.json && rm -rf node_modules; npm i"
   },
   "type": "module",
