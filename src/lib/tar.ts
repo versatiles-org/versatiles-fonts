@@ -1,21 +1,21 @@
 
 import tar from 'tar-stream';
 import { createGzip } from 'node:zlib';
-import { Font } from './fonts.ts';
+import { FontGlyphsWrapper } from './fonts.ts';
 import { createWriteStream } from 'node:fs';
 import { finished } from 'node:stream/promises';
 import { Progress } from './progress.ts';
 import { runParallel } from './async.ts';
 
-async function pack(filename: string, fonts: Font[]) {
+async function pack(filename: string, fonts: FontGlyphsWrapper[]) {
 	if (!filename.endsWith('.tar.gz')) throw Error();
 
 	const pack = tar.pack();
 
 	for (const font of fonts) {
 		if (!font.glyphs) continue;
-		for (const file of font.glyphs) {
-			pack.entry({ name: file.name }, file.buffer);
+		for (const { filename, buffer } of font.glyphs) {
+			pack.entry({ name: filename }, buffer);
 		}
 	}
 
@@ -33,8 +33,8 @@ async function pack(filename: string, fonts: Font[]) {
 }
 
 export class Packer {
-	readonly todos: { filename: string; fonts: Font[]; size: number }[] = [];
-	add(filename: string, fonts: Font[]) {
+	readonly todos: { filename: string; fonts: FontGlyphsWrapper[]; size: number }[] = [];
+	add(filename: string, fonts: FontGlyphsWrapper[]) {
 		this.todos.push({ filename, fonts, size: fonts.reduce((s, f) => s + f.glyphSize, 0) })
 	}
 	async run() {

@@ -2,11 +2,9 @@
 'use strict'
 
 import { existsSync, mkdirSync, rmSync } from 'node:fs';
-import { Font, getFonts } from './lib/fonts.ts';
+import { FontGlyphsWrapper, getFonts as getFontSources } from './lib/fonts.ts';
 import { Packer } from './lib/tar.ts';
-import { buildGlyphs, mergeGlyphs } from './lib/glyphs.ts';
-import { runParallel } from './lib/async.ts';
-import { Progress } from './lib/progress.ts';
+import { buildAllGlyphs } from './lib/glyphs.ts';
 
 process.chdir(new URL('../', import.meta.url).pathname)
 
@@ -19,38 +17,20 @@ mkdirSync('dist', { recursive: true });
 
 
 console.log('scan for fonts');
-const fonts = getFonts('font-sources');//.filter(f => f.fontFace.family === 'Fira Sans');
+const fontSources = getFontSources('font-sources');//.filter(f => f.fontFace.family === 'Fira Sans');
 
 
-
-const fontSources = fonts.flatMap(f => f.sources);
-fontSources.sort((a, b) => b.size - a.size);
-let progress = new Progress('build glyphs', fontSources.reduce((s, f) => s + f.size, 0));
-await runParallel(fontSources, async fontSource => {
-	await buildGlyphs(fontSource);
-	progress.increase(fontSource.size);
-});
-progress.finish();
-
-
-
-fonts.forEach(font => font.glyphSize = font.sources.reduce((sum, source) => sum + source.glyphSize, 0))
-progress = new Progress('merge glyphs', fonts.reduce((s, f) => s + f.glyphSize, 0));
-await runParallel(fonts, async font => {
-	await mergeGlyphs(font);
-	progress.increase(font.glyphSize);
-});
-progress.finish();
+const fontGlyphs = await buildAllGlyphs(fontSources);
 
 
 
 
 const packer = new Packer();
-packer.add('dist/fonts.tar.gz', fonts);
+packer.add('dist/fonts.tar.gz', fontGlyphs);
 
-const fontFamilies: Record<string, Font[]> = {};
-fonts.forEach(f => {
-	const key = f.fontFace.family;
+const fontFamilies: Record<string, FontGlyphsWrapper[]> = {};
+fontGlyphs.forEach(f => {
+	const key = f.fontFace.familyId;
 	if (fontFamilies[key]?.push(f)) return;
 	fontFamilies[key] = [f];
 })
