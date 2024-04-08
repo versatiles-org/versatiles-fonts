@@ -5,6 +5,12 @@ import { Progress } from './progress.ts';
 import { runParallel } from './async.ts';
 
 
+interface Range { index: number; start: number; end: number }
+const defaultRanges: Range[] = [];
+for (let start = 0; start < 65536; start += 256) {
+	const index = start / 256;
+	defaultRanges[index] = { index, start, end: start + 255 };
+}
 
 export interface FontGlyphsWrapper {
 	glyphs: { filename: string, buffer: Buffer }[];
@@ -13,46 +19,51 @@ export interface FontGlyphsWrapper {
 }
 
 export async function buildAllGlyphs(fonts: FontSourcesWrapper[]): Promise<FontGlyphsWrapper[]> {
-	const fontSources = fonts.flatMap(font => font.sources.map(filename => ({
-		filename,
-		fontFace: font.fontFace,
-		size: statSync(filename).size
-	})));
-	fontSources.sort((a, b) => b.size - a.size);
+	const fontRanges = [];
+	for (const font of fonts) {
+		for (const filename of font.sources) {
+			const bufferFont = readFileSync(filename);
+			const ranges = await getGlyphRanges(bufferFont, font.fontFace);
+			for (const range of ranges) {
+				fontRanges.push({
+					...range,
+					bufferFont,
+					fontFace: font.fontFace
+				})
+			}
+		}
+	}
 
 	const fontGlyphsLookup = new Map<string, { fontFace: FontFace; start: number; end: number; buffers: Buffer[], size: number }>();
 
-	let progress1 = new Progress('build glyphs', fontSources.reduce((s, f) => s + f.size, 0));
-	await runParallel(fontSources, async ({ filename, fontFace, size }) => {
-		const bufferIn = readFileSync(filename);
-		try {
-			await verifyGlyphsStyle(bufferIn, fontFace);
-		} catch (err) {
-			console.error('   for file:', filename);
-			console.error('   for fontFace:', fontFace);
-			throw err;
-		}
+	let progress1 = new Progress('build glyphs', fontRanges.reduce((s, f) => s + f.charCount, 0));
+	await runParallel(fontRanges, async ({ bufferFont, fontFace, start, end, charCount }) => {
+		const buffer = await new Promise<Buffer>(resolve => {
+			fontnik.range(
+				{ font: bufferFont, start, end },
+				(err, buffer) => {
+					if (err) throw err;
+					resolve(buffer);
+				}
+			);
+		})
 
-		const glyphs = await buildGlyphs(bufferIn);
-
-		for (const glyph of glyphs) {
-			const key = fontFace.fontId + ':' + glyph.start;
-			const entry = fontGlyphsLookup.get(key);
-			if (entry) {
-				if (entry.end !== glyph.end) throw Error();
-				entry.buffers.push(glyph.buffer);
-				entry.size += glyph.buffer.length;
-			} else {
-				fontGlyphsLookup.set(key, {
-					fontFace: fontFace,
-					start: glyph.start,
-					end: glyph.end,
-					buffers: [glyph.buffer],
-					size: glyph.buffer.length,
-				});
-			}
+		const key = fontFace.fontId + ':' + start;
+		const entry = fontGlyphsLookup.get(key);
+		if (entry) {
+			if (entry.end !== end) throw Error();
+			entry.buffers.push(buffer);
+			entry.size += buffer.length;
+		} else {
+			fontGlyphsLookup.set(key, {
+				fontFace: fontFace,
+				start: start,
+				end: end,
+				buffers: [buffer],
+				size: buffer.length,
+			});
 		}
-		progress1.increase(size);
+		progress1.increase(charCount);
 	});
 	progress1.finish();
 
@@ -84,42 +95,41 @@ export async function buildAllGlyphs(fonts: FontSourcesWrapper[]): Promise<FontG
 	return Array.from(fontGlyphsWrappers.values());
 }
 
-
-async function buildGlyphs(bufferIn: Buffer) {
-	const glyphs: { start: number; end: number; buffer: Buffer }[] = [];
-
-	for (let start = 0; start < 65536; start += 256) {
-		const end = start + 255;
-
-		const buffer = await new Promise<Buffer>(resolve => {
-			fontnik.range(
-				{ font: bufferIn, start, end },
-				(err, buffer) => {
-					if (err) throw err;
-					resolve(buffer);
-				}
-			);
-		})
-		if (buffer) glyphs.push({ start, end, buffer });
-	}
-
-	return glyphs;
-}
-
-async function verifyGlyphsStyle(bufferIn: Buffer, fontFace: FontFace) {
+async function getGlyphRanges(buffer: Buffer, fontFace: FontFace): Promise<{ charCount: number; start: number, end: number }[]> {
 	const result = await new Promise<{ family_name: string; style_name: string; points: number[]; }[]>(resolve => {
-		fontnik.load(bufferIn, (err, points) => {
+		fontnik.load(buffer, (err, points) => {
 			if (err) throw Error(err);
 			resolve(points);
 		})
 	});
 	if (result.length !== 1) throw Error();
-	const definition = result[0];
-	if (!definition.family_name.startsWith(fontFace.familyName)) {
-		throw Error(`Family name "${definition.family_name}" does not start with "${fontFace.familyName}"`)
+
+	let { family_name, style_name, points } = result[0];
+
+	family_name = family_name.replace(/([a-z])([A-Z])/g, '$1 $2');
+	if (!family_name.startsWith(fontFace.familyName)) {
+		throw Error(`Family name "${family_name}" does not start with "${fontFace.familyName}"`)
 	}
-	if (definition.style_name !== fontFace.styleName) {
+
+	style_name = style_name.replace(/([a-z])([A-Z])/g, '$1 $2');
+	if (style_name.startsWith('Hairline')) style_name = style_name.replace('Hairline', 'Thin');
+	if (style_name.startsWith('Regular ')) style_name = style_name.replace('Regular ', '');
+	style_name = style_name.trim().replace(/\s{2,}/g, ' ');
+
+	if (style_name !== fontFace.styleName) {
 		console.log(result);
-		throw Error(`Style name "${definition.style_name}" !== "${fontFace.styleName}"`)
+		throw Error(`Style name "${style_name}" !== "${fontFace.styleName}"`)
 	}
+
+	const ranges: { charCount: number; start: number, end: number }[] = [];
+	points.forEach(charIndex => {
+		if (charIndex > 65535) return;
+		const rangeIndex = Math.floor(charIndex / 256);
+		if (!ranges[rangeIndex]) {
+			ranges[rangeIndex] = { charCount: 1, start: defaultRanges[rangeIndex].start, end: defaultRanges[rangeIndex].end };
+		} else {
+			ranges[rangeIndex].charCount++;
+		}
+	});
+	return ranges.filter(r => r);
 }

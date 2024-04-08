@@ -74,12 +74,12 @@ function getFontFace(fontName: string, familyName: string): FontFace {
 	const styleParts: string[] = [];
 	switch (weight) {
 		case 100: styleParts.push('Thin'); break;
-		case 200: styleParts.push('ExtraLight'); break;
+		case 200: styleParts.push('Extra Light'); break;
 		case 300: styleParts.push('Light'); break;
 		case 500: styleParts.push('Medium'); break;
-		case 600: styleParts.push('SemiBold'); break;
+		case 600: styleParts.push('Semi Bold'); break;
 		case 700: styleParts.push('Bold'); break;
-		case 800: styleParts.push('ExtraBold'); break;
+		case 800: styleParts.push('Extra Bold'); break;
 		case 900: styleParts.push('Black'); break;
 	}
 	switch (style) {
