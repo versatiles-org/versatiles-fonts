@@ -5,11 +5,11 @@ import { Progress } from './progress.ts';
 import { runParallel } from './async.ts';
 
 
-interface Range { index: number; start: number; end: number }
+interface Range { start: number; end: number }
 const defaultRanges: Range[] = [];
 for (let start = 0; start < 65536; start += 256) {
 	const index = start / 256;
-	defaultRanges[index] = { index, start, end: start + 255 };
+	defaultRanges[index] = { start, end: start + 255 };
 }
 
 export interface FontGlyphsWrapper {
@@ -37,7 +37,7 @@ export async function buildAllGlyphs(fonts: FontSourcesWrapper[]): Promise<FontG
 
 	const fontGlyphsLookup = new Map<string, { fontFace: FontFace; start: number; end: number; buffers: Buffer[], size: number }>();
 
-	let progress1 = new Progress('build glyphs', fontRanges.reduce((s, f) => s + f.charCount, 0));
+	const progress1 = new Progress('build glyphs', fontRanges.reduce((s, f) => s + f.charCount, 0));
 	await runParallel(fontRanges, async ({ bufferFont, fontFace, start, end, charCount }) => {
 		const buffer = await new Promise<Buffer>(resolve => {
 			fontnik.range(
@@ -72,7 +72,7 @@ export async function buildAllGlyphs(fonts: FontSourcesWrapper[]): Promise<FontG
 
 	const fontGlyphsList = Array.from(fontGlyphsLookup.values());
 	const fontGlyphsWrappers = new Map<string, FontGlyphsWrapper>();
-	let progress2 = new Progress('merge glyphs', fontGlyphsList.reduce((s, f) => s + f.size, 0));
+	const progress2 = new Progress('merge glyphs', fontGlyphsList.reduce((s, f) => s + f.size, 0));
 	await runParallel(fontGlyphsList, async ({ fontFace, start, end, buffers, size }) => {
 		const filename = `${fontFace.fontId}/${start}-${end}.pbf`;
 		const buffer = await new Promise<Buffer>(resolve => fontnik.composite(buffers, (err, buffer) => {
@@ -122,15 +122,11 @@ async function getGlyphRanges(buffer: Buffer, fontFace: FontFace): Promise<{ cha
 		throw Error(`Style name "${style_name}" !== "${fontFace.styleName}"`)
 	}
 
-	const ranges: { charCount: number; start: number, end: number }[] = [];
+	const ranges = defaultRanges.map(range => ({ ...range, charCount: 0 }));
 	points.forEach(charIndex => {
-		if (charIndex > 65535) return;
 		const rangeIndex = Math.floor(charIndex / 256);
-		if (!ranges[rangeIndex]) {
-			ranges[rangeIndex] = { charCount: 1, start: defaultRanges[rangeIndex].start, end: defaultRanges[rangeIndex].end };
-		} else {
-			ranges[rangeIndex].charCount++;
-		}
+		if (!ranges[rangeIndex]) return;
+		ranges[rangeIndex].charCount++;
 	});
 	return ranges.filter(r => r);
 }
