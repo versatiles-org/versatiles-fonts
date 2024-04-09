@@ -1,4 +1,3 @@
-// tar.test.ts
 import tar from 'tar-stream';
 import { jest } from '@jest/globals';
 import type { FontGlyphsWrapper } from './glyphs.ts';
