@@ -1,14 +1,20 @@
 
 export class Progress {
 	private readonly msg: string;
+
 	private value: number;
-	private timeStart: number;
+
+	private readonly timeStart: number;
+
 	private readonly maxValue: number;
+
 	private readonly isTTY: boolean;
+
 	private readonly stepCount: number;
+
 	private lastStep: number;
 
-	constructor(msg: string, maxValue: number) {
+	public constructor(msg: string, maxValue: number) {
 		this.msg = msg;
 		this.maxValue = maxValue;
 		this.value = 0;
@@ -19,23 +25,23 @@ export class Progress {
 		this.render();
 	}
 
-	update(value: number) {
+	public update(value: number): void {
 		this.value = value;
 		this.render();
 	}
 
-	increase(value: number) {
+	public increase(value: number): void {
 		this.value += value;
 		this.render();
 	}
 
-	finish() {
+	public finish(): void {
 		this.value = this.maxValue;
 		this.render();
 		process.stderr.write('\n');
 	}
 
-	private render() {
+	private render(): void {
 		const step = Math.floor(this.stepCount * this.value / this.maxValue);
 		if (step <= this.lastStep) return;
 		this.lastStep = step;

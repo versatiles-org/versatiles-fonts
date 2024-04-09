@@ -1,15 +1,15 @@
 #!/usr/bin/env node
-'use strict'
 
 import { existsSync, mkdirSync, rmSync } from 'node:fs';
 import { getFontSources } from './lib/fonts.ts';
 import { TarPacker } from './lib/tar.ts';
-import { FontGlyphsWrapper, buildAllGlyphs } from './lib/glyphs.ts';
+import type { FontGlyphsWrapper } from './lib/glyphs.ts';
+import { buildAllGlyphs } from './lib/glyphs.ts';
 
 
 
 console.log('prepare folder');
-process.chdir(new URL('../', import.meta.url).pathname)
+process.chdir(new URL('../', import.meta.url).pathname);
 if (existsSync('dist')) rmSync('dist', { recursive: true, force: true });
 mkdirSync('dist', { recursive: true });
 
@@ -30,16 +30,16 @@ packer.add('dist/fonts.tar.gz', fontGlyphs);
 const fontFamilies: Record<string, FontGlyphsWrapper[]> = {};
 fontGlyphs.forEach(f => {
 	const key = f.fontFace.familyId;
-	if (fontFamilies[key]?.push(f)) return;
+	if (fontFamilies[key].push(f)) return;
 	fontFamilies[key] = [f];
-})
+});
 for (const [family, fontSubset] of Object.entries(fontFamilies)) {
-	packer.add(`dist/${family}.tar.gz`, fontSubset)
+	packer.add(`dist/${family}.tar.gz`, fontSubset);
 }
 
 await packer.run();
 
 
 
-console.log('Finished')
+console.log('Finished');
 

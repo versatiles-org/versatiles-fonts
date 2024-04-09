@@ -26,9 +26,9 @@ export function getFontSources(inputDir: string): FontSourcesWrapper[] {
 		if (!lstatSync(dirInFont).isDirectory()) return;
 		let fonts = new Array<{ name: string; sources: string[] }>();
 
-		let fontFile = resolve(dirInFont, 'fonts.json');
+		const fontFile = resolve(dirInFont, 'fonts.json');
 		if (existsSync(fontFile)) {
-			fonts = JSON.parse(readFileSync(fontFile, 'utf8'));
+			fonts = JSON.parse(readFileSync(fontFile, 'utf8')) as { name: string; sources: string[] }[];
 		} else {
 			readdirSync(dirInFont).forEach(file => {
 				if (file.endsWith('.ttf') || file.endsWith('.otf')) {
@@ -68,6 +68,7 @@ function getFontFace(fontName: string, familyName: string): FontFace {
 	if (!variation.startsWith(familyName)) throw Error(`fontName "${fontName}" does not start with familyName "${familyName}"`);
 	variation = variation.slice(familyName.length).toLowerCase();
 
+	// eslint-disable-next-line @typescript-eslint/naming-convention
 	const weight: FontFace['weight'] = extractVariation({ thin: 100, 'extra light': 200, light: 300, regular: 400, medium: 500, 'semi bold': 600, 'semibold': 600, 'web bold': 700, 'extra bold': 800, bold: 700, black: 900 }, 400);
 	const italic: FontFace['italic'] = extractVariation({ italic: true }, false);
 
@@ -76,6 +77,7 @@ function getFontFace(fontName: string, familyName: string): FontFace {
 		case 100: styleParts.push('Thin'); break;
 		case 200: styleParts.push('Extra Light'); break;
 		case 300: styleParts.push('Light'); break;
+		case 400: break;
 		case 500: styleParts.push('Medium'); break;
 		case 600: styleParts.push('Semi Bold'); break;
 		case 700: styleParts.push('Bold'); break;
@@ -93,7 +95,7 @@ function getFontFace(fontName: string, familyName: string): FontFace {
 		styleName,
 		italic,
 		weight,
-	}
+	};
 
 	if (variation.trim() !== '') throw Error(`can not find variation "${variation}" in name "${fontName}"`);
 

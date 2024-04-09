@@ -4,16 +4,17 @@ const maxConcurrency = cpus().length;
 
 export async function runParallel<T>(items: T[], cb: ((item: T) => Promise<void>)): Promise<void> {
 	let count = 0;
-	let listener: null | (() => void) = null;
+	let listener: (() => void) | null = null;
 
 	for (const item of items) {
 		if (count >= maxConcurrency) await waitTillLowerThan(maxConcurrency);
 		count++;
 		const promise = cb(item);
-		promise.then(() => {
+		// eslint-disable-next-line @typescript-eslint/no-loop-func
+		void promise.then(() => {
 			count--;
 			if (listener) listener();
-		})
+		});
 	}
 
 	await waitTillLowerThan(1);
@@ -23,12 +24,12 @@ export async function runParallel<T>(items: T[], cb: ((item: T) => Promise<void>
 
 		return new Promise(resolve => {
 			if (listener) throw Error();
-			listener = () => {
+			listener = (): void => {
 				if (count < limit) {
 					listener = null;
 					resolve();
 				}
-			}
-		})
+			};
+		});
 	}
 }

@@ -1,11 +1,13 @@
 import fontnik from 'fontnik';
-import { readFileSync, statSync } from 'node:fs';
-import { FontFace, FontSourcesWrapper } from './fonts.ts';
+import { readFileSync } from 'node:fs';
+import type { FontFace, FontSourcesWrapper } from './fonts.ts';
 import { Progress } from './progress.ts';
 import { runParallel } from './async.ts';
 
 
-interface Range { start: number; end: number }
+interface Range {
+	start: number; end: number;
+}
 const defaultRanges: Range[] = [];
 for (let start = 0; start < 65536; start += 256) {
 	const index = start / 256;
@@ -13,7 +15,7 @@ for (let start = 0; start < 65536; start += 256) {
 }
 
 export interface FontGlyphsWrapper {
-	glyphs: { filename: string, buffer: Buffer, start: number }[];
+	glyphs: { filename: string; buffer: Buffer; start: number }[];
 	glyphSize: number;
 	fontFace: FontFace;
 }
@@ -28,26 +30,26 @@ export async function buildAllGlyphs(fonts: FontSourcesWrapper[]): Promise<FontG
 				fontRanges.push({
 					...range,
 					bufferFont,
-					fontFace: font.fontFace
-				})
+					fontFace: font.fontFace,
+				});
 			}
 		}
 	}
-	fontRanges.sort((a, b) => Math.random() - 0.5);
+	fontRanges.sort(() => Math.random() - 0.5);
 
-	const fontGlyphsLookup = new Map<string, { fontFace: FontFace; start: number; end: number; buffers: Buffer[], size: number }>();
+	const fontGlyphsLookup = new Map<string, { fontFace: FontFace; start: number; end: number; buffers: Buffer[]; size: number }>();
 
 	const progress1 = new Progress('build glyphs', fontRanges.reduce((s, f) => s + f.charCount, 0));
 	await runParallel(fontRanges, async ({ bufferFont, fontFace, start, end, charCount }) => {
 		const buffer = await new Promise<Buffer>(resolve => {
 			fontnik.range(
 				{ font: bufferFont, start, end },
-				(err, buffer) => {
-					if (err) throw err;
-					resolve(buffer);
-				}
+				(err, glphysBuffer) => {
+					if (err) throw Error(err);
+					resolve(glphysBuffer);
+				},
 			);
-		})
+		});
 
 		const key = fontFace.fontId + ':' + start;
 		const entry = fontGlyphsLookup.get(key);
@@ -76,10 +78,10 @@ export async function buildAllGlyphs(fonts: FontSourcesWrapper[]): Promise<FontG
 	await runParallel(fontGlyphsList, async ({ fontFace, start, end, buffers, size }) => {
 		const filename = `${fontFace.fontId}/${start}-${end}.pbf`;
 		const buffer = await new Promise<Buffer>(resolve => {
-			fontnik.composite(buffers, (err, buffer) => {
+			fontnik.composite(buffers, (err, compositeBuffer) => {
 				if (err) throw Error(err);
-				resolve(buffer);
-			})
+				resolve(compositeBuffer);
+			});
 		});
 		const glyph = { filename, buffer, start };
 		const key = fontFace.fontId;
@@ -92,26 +94,29 @@ export async function buildAllGlyphs(fonts: FontSourcesWrapper[]): Promise<FontG
 			fontGlyphsWrappers.set(key, { fontFace, glyphs: [glyph], glyphSize: buffer.length });
 		}
 		progress2.increase(size);
-	})
+	});
 	progress2.finish();
 
 	return Array.from(fontGlyphsWrappers.values());
 }
 
-async function getGlyphRanges(buffer: Buffer, fontFace: FontFace): Promise<{ charCount: number; start: number, end: number }[]> {
-	const result = await new Promise<{ family_name: string; style_name: string; points: number[]; }[]>(resolve => {
+async function getGlyphRanges(buffer: Buffer, fontFace: FontFace): Promise<{ charCount: number; start: number; end: number }[]> {
+	// eslint-disable-next-line @typescript-eslint/naming-convention
+	const result = await new Promise<{ family_name: string; style_name: string; points: number[] }[]>(resolve => {
 		fontnik.load(buffer, (err, points) => {
 			if (err) throw Error(err);
 			resolve(points);
-		})
+		});
 	});
 	if (result.length !== 1) throw Error();
 
-	let { family_name, style_name, points } = result[0];
+
+	// eslint-disable-next-line @typescript-eslint/naming-convention, prefer-const
+	let [{ family_name, style_name, points }] = result;
 
 	family_name = family_name.replace(/([a-z])([A-Z])/g, '$1 $2');
 	if (!family_name.startsWith(fontFace.familyName)) {
-		throw Error(`Family name "${family_name}" does not start with "${fontFace.familyName}"`)
+		throw Error(`Family name "${family_name}" does not start with "${fontFace.familyName}"`);
 	}
 
 	style_name = style_name.replace(/([a-z])([A-Z])/g, '$1 $2');
@@ -121,14 +126,13 @@ async function getGlyphRanges(buffer: Buffer, fontFace: FontFace): Promise<{ cha
 
 	if (style_name !== fontFace.styleName) {
 		console.log(result);
-		throw Error(`Style name "${style_name}" !== "${fontFace.styleName}"`)
+		throw Error(`Style name "${style_name}" !== "${fontFace.styleName}"`);
 	}
 
 	const ranges = defaultRanges.map(range => ({ ...range, charCount: 0 }));
 	points.forEach(charIndex => {
-		const rangeIndex = Math.floor(charIndex / 256);
-		if (!ranges[rangeIndex]) return;
-		ranges[rangeIndex].charCount++;
+		const i = Math.floor(charIndex / 256);
+		if (i < ranges.length) ranges[i].charCount++;
 	});
-	return ranges.filter(r => r);
+	return ranges;
 }

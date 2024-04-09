@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 
 declare module 'fontnik' {
 	export function composite(
