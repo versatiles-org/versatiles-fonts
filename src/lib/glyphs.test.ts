@@ -6,8 +6,8 @@ describe('buildAllGlyphs', () => {
 	it('should build all glyphs from font sources', async () => {
 		process.chdir(new URL('../../', import.meta.url).pathname);
 		const fontSources = getFontSources('font-sources')
-			.filter(f => f.sources[0].endsWith('FiraSans-Bold.ttf'));
-
+			.filter(f => f.fontFace.fontId === 'fira_sans_bold');
+		
 		const result = await buildAllGlyphs(fontSources);
 
 		expect(Array.isArray(result)).toBe(true);

@@ -2,7 +2,7 @@ import { existsSync, lstatSync, readFileSync, readdirSync } from 'node:fs';
 import { basename, resolve } from 'node:path';
 
 export interface FontSourcesWrapper {
-	sources: string[];
+	sources: Buffer[];
 	fontFace: FontFace;
 }
 
@@ -49,7 +49,7 @@ export function getFontSources(inputDir: string): FontSourcesWrapper[] {
 		fonts.forEach(font => {
 			const sources = font.sources
 				.filter(filename => !filename.startsWith('#'))
-				.map(filename => resolve(dirInFont, filename));
+				.map(filename => readFileSync(resolve(dirInFont, filename)));
 
 			if (sources.length <= 0) throw Error();
 

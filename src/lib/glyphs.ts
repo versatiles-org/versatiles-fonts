@@ -1,5 +1,4 @@
 import fontnik from 'fontnik';
-import { readFileSync } from 'node:fs';
 import type { FontFace, FontSourcesWrapper } from './fonts.ts';
 import { Progress } from './progress.ts';
 import { runParallel } from './async.ts';
@@ -23,8 +22,7 @@ export interface FontGlyphsWrapper {
 export async function buildAllGlyphs(fonts: FontSourcesWrapper[]): Promise<FontGlyphsWrapper[]> {
 	const fontRanges = [];
 	for (const font of fonts) {
-		for (const filename of font.sources) {
-			const bufferFont = readFileSync(filename);
+		for (const bufferFont of font.sources) {
 			const ranges = await getGlyphRanges(bufferFont, font.fontFace);
 			for (const range of ranges) {
 				fontRanges.push({

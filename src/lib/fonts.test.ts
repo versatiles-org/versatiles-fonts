@@ -18,7 +18,7 @@ jest.unstable_mockModule('node:fs', () => ({
 		if (path === '/fonts/family1/fonts.json') {
 			return JSON.stringify([{ name: 'fontFamily1', sources: ['font1.ttf', 'font2.otf'] }]);
 		}
-		throw Error();
+		return `content of ${path}`;
 	}),
 }));
 
@@ -39,7 +39,7 @@ describe('getFontSources', () => {
 					styleName: 'Bold',
 					weight: 700,
 				},
-				'sources': ['/fonts/Family 1/Family1_bold.otf'],
+				'sources': ['content of /fonts/Family 1/Family1_bold.otf'],
 			},
 			{
 				fontFace: {
@@ -51,7 +51,7 @@ describe('getFontSources', () => {
 					styleName: 'Italic',
 					weight: 400,
 				},
-				'sources': ['/fonts/Family 1/Family1_italic.ttf'],
+				'sources': ['content of /fonts/Family 1/Family1_italic.ttf'],
 			},
 			{
 				fontFace: {
@@ -63,7 +63,7 @@ describe('getFontSources', () => {
 					styleName: 'Regular',
 					weight: 400,
 				},
-				'sources': ['/fonts/Family 1/Family1.otf'],
+				'sources': ['content of /fonts/Family 1/Family1.otf'],
 			},
 			{
 				fontFace: {
@@ -75,7 +75,7 @@ describe('getFontSources', () => {
 					styleName: 'Bold',
 					weight: 700,
 				},
-				'sources': ['/fonts/Family 2/Family2_bold.ttf'],
+				'sources': ['content of /fonts/Family 2/Family2_bold.ttf'],
 			},
 			{
 				fontFace: {
@@ -87,7 +87,7 @@ describe('getFontSources', () => {
 					styleName: 'Italic',
 					weight: 400,
 				},
-				'sources': ['/fonts/Family 2/Family2_italic.otf'],
+				'sources': ['content of /fonts/Family 2/Family2_italic.otf'],
 			},
 		]);
 	});
