@@ -4,11 +4,13 @@
   "private": true,
   "scripts": {
     "build": "tsx src/build_fonts.ts",
-    "check": "npm run test",
+    "check": "npm run lint; npm run test",
     "lint": "eslint --color .",
     "prepack": "",
     "release": "vrt release-npm",
-    "test": "echo 'in confidence we trust'",
+    "test": "npm run test-typescript",
+    "test-coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",
+    "test-typescript": "NODE_OPTIONS=--experimental-vm-modules jest",
     "upgrade": "npm-check-updates -u && rm -f package-lock.json && rm -rf node_modules; npm i"
   },
   "type": "module",
@@ -28,6 +30,9 @@
     "@typescript-eslint/parser": "^7.6.0",
     "@versatiles/release-tool": "^1.2.3",
     "eslint": "^8.57.0",
-    "npm-check-updates": "^16.14.18"
+    "jest": "^29.7.0",
+    "npm-check-updates": "^16.14.18",
+    "ts-jest": "^29.1.2",
+    "ts-node": "^10.9.2"
   }
 }
