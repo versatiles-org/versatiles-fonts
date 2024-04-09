@@ -30,8 +30,11 @@ packer.add('dist/fonts.tar.gz', fontGlyphs);
 const fontFamilies: Record<string, FontGlyphsWrapper[]> = {};
 fontGlyphs.forEach(f => {
 	const key = f.fontFace.familyId;
-	if (fontFamilies[key].push(f)) return;
-	fontFamilies[key] = [f];
+	if (key in fontFamilies) {
+		fontFamilies[key].push(f);
+	} else {
+		fontFamilies[key] = [f];
+	}
 });
 for (const [family, fontSubset] of Object.entries(fontFamilies)) {
 	packer.add(`dist/${family}.tar.gz`, fontSubset);
