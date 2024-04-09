@@ -1,5 +1,9 @@
-name: Release fonts
+name: Release
+
 on:
+  push:
+    tags:
+      - "v*"
   workflow_dispatch:
 
 jobs:
