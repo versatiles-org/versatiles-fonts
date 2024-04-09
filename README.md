@@ -1,3 +1,8 @@
+[![Code Coverage](https://codecov.io/gh/versatiles-org/versatiles-fonts/branch/main/graph/badge.svg?token=IDHAI13M0K)](https://codecov.io/gh/versatiles-org/versatiles-fonts)
+[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/versatiles-org/versatiles-fonts/ci.yml)](https://github.com/versatiles-org/versatiles-fonts/actions/workflows/ci.yml)
+[![GitHub Release](https://img.shields.io/github/v/release/versatiles-org/versatiles-fonts)](https://github.com/versatiles-org/versatiles-fonts/releases/latest)
+[![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/versatiles-org/versatiles-fonts/total)](https://github.com/versatiles-org/versatiles-fonts/releases/latest)
+
 # VersaTiles Fonts
 
 free font glyphs for map rendering
