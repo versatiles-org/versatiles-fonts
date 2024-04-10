@@ -1,13 +1,28 @@
-import { buildAllGlyphs } from './glyphs.ts';
-import { getFontSources } from './fonts.ts';
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
+/* eslint-disable @typescript-eslint/naming-convention */
+import { jest } from '@jest/globals';
+
+jest.unstable_mockModule('./progress.ts', () => ({
+	Progress: function () {
+		return {
+			increase: () => {
+				return; 
+			},
+			finish: () => {
+				return; 
+			},
+		};
+	},
+}));
+const { buildAllGlyphs } = await import('./glyphs.ts');
+const { getFontSources } = await import('./fonts.ts');
 
 describe('buildAllGlyphs', () => {
-
 	it('should build all glyphs from font sources', async () => {
 		process.chdir(new URL('../../', import.meta.url).pathname);
 		const fontSources = getFontSources('font-sources')
 			.filter(f => f.fontFace.fontId === 'fira_sans_bold');
-		
+
 		const result = await buildAllGlyphs(fontSources);
 
 		expect(Array.isArray(result)).toBe(true);
