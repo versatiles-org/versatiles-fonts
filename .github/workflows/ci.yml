@@ -3,11 +3,11 @@ name: CI
 on:
   push:
     branches:
-      - "**"
+      - '**'
     tags:
-      - "!**" # Don't run twice on commits with tags
+      - '!**' # Don't run twice on commits with tags
   schedule:
-    - cron "30 6 * * 1"
+    - cron: '30 6 * * 1'
   pull_request:
   workflow_dispatch:
 
