@@ -6,6 +6,8 @@ on:
       - "**"
     tags:
       - "!**" # Don't run twice on commits with tags
+  schedule:
+    - cron "30 6 * * 1"
   pull_request:
   workflow_dispatch:
 
@@ -46,6 +48,6 @@ jobs:
         run: npm run test-coverage
 
       - name: Upload test coverage
-        uses: codecov/codecov-action@v4.0.1
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
