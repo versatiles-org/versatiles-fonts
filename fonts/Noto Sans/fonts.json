@@ -1,0 +1,58 @@
+[
+	{
+		"name": "Noto Sans Regular",
+		"sources": [
+			"Noto Sans - Regular.ttf",
+			"Noto Sans Arabic - Regular.ttf",
+			"Noto Sans Armenian - Regular.ttf",
+			"Noto Sans Balinese - Regular.ttf",
+			"Noto Sans Bengali - Regular.ttf",
+			"Noto Sans Devanagari - Regular.ttf",
+			"Noto Sans Ethiopic - Regular.ttf",
+			"Noto Sans Georgian - Regular.ttf",
+			"Noto Sans Gujarati - Regular.ttf",
+			"Noto Sans Gurmukhi - Regular.ttf",
+			"Noto Sans Hebrew - Regular.ttf",
+			"Noto Sans JP - Regular.ttf",
+			"Noto Sans Javanese - Regular.ttf",
+			"Noto Sans KR - Regular.ttf",
+			"Noto Sans Kannada - Regular.ttf",
+			"Noto Sans Khmer - Regular.ttf",
+			"Noto Sans Lao - Regular.ttf",
+			"Noto Sans Myanmar - Regular.ttf",
+			"Noto Sans Oriya - Regular.ttf",
+			"Noto Sans SC - Regular.ttf",
+			"Noto Sans Sinhala - Regular.ttf",
+			"Noto Sans Tamil - Regular.ttf",
+			"Noto Sans Thai - Regular.ttf"
+		]
+	},
+	{
+		"name": "Noto Sans Bold",
+		"sources": [
+			"Noto Sans - Bold.ttf",
+			"Noto Sans Arabic - Bold.ttf",
+			"Noto Sans Armenian - Bold.ttf",
+			"Noto Sans Balinese - Bold.ttf",
+			"Noto Sans Bengali - Bold.ttf",
+			"Noto Sans Devanagari - Bold.ttf",
+			"Noto Sans Ethiopic - Bold.ttf",
+			"Noto Sans Georgian - Bold.ttf",
+			"Noto Sans Gujarati - Bold.ttf",
+			"Noto Sans Gurmukhi - Bold.ttf",
+			"Noto Sans Hebrew - Bold.ttf",
+			"Noto Sans JP - Bold.ttf",
+			"Noto Sans Javanese - Bold.ttf",
+			"Noto Sans KR - Bold.ttf",
+			"Noto Sans Kannada - Bold.ttf",
+			"Noto Sans Khmer - Bold.ttf",
+			"Noto Sans Lao - Bold.ttf",
+			"Noto Sans Myanmar - Bold.ttf",
+			"Noto Sans Oriya - Bold.ttf",
+			"Noto Sans SC - Bold.ttf",
+			"Noto Sans Sinhala - Bold.ttf",
+			"Noto Sans Tamil - Bold.ttf",
+			"Noto Sans Thai - Bold.ttf"
+		]
+	}
+]

@@ -16,7 +16,7 @@ mkdirSync('dist', { recursive: true });
 
 
 console.log('scan for fonts');
-const fontSources = getFontSources('font-sources');
+const fontSources = getFontSources('fonts');
 
 
 

@@ -36,16 +36,12 @@ export function getFontSources(inputDir: string): FontSourcesWrapper[] {
 					let name = basename(file);
 					name = name.replace(/\..*?$/, '');
 					name = name.replace(/\-/g, '');
-					name = name.replace(/_/g, ' ');
-					name = name.replace(/([a-z0-9])([A-Z0-9])/g, '$1 $2');
-					name = name.replace(/([A-Z])([A-Z][a-z])/g, '$1 $2');
 					name = name.replace(/\s+/, ' ').trim();
 					fonts.push({ name, sources: [basename(file)] });
 				}
 			});
 		}
 
-		// font.name should be lowercase+underscore
 		fonts.forEach(font => {
 			const sources = font.sources
 				.filter(filename => !filename.startsWith('#'))
