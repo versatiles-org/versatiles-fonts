@@ -35,8 +35,7 @@ export function getFontSources(inputDir: string): FontSourcesWrapper[] {
 					// compatible font name generation with genfontgl
 					let name = basename(file);
 					name = name.replace(/\..*?$/, '');
-					name = name.replace(/\-/g, '');
-					name = name.replace(/\s+/, ' ').trim();
+					name = name.replace(/[-_\s]+/g, ' ').trim();
 					fonts.push({ name, sources: [basename(file)] });
 				}
 			});
@@ -83,11 +82,17 @@ function getFontFace(fontName: string, familyName: string): FontFace {
 	if (italic) styleParts.push('Italic');
 	const styleName = (styleParts.length > 0) ? styleParts.join(' ') : 'Regular';
 
+	const newFontName = familyName + ' - ' + styleName;
+	const textToId = (s: string): string => s.toLowerCase().replace(/[\s_-]+/g, '_');
+	if (textToId(newFontName) !== textToId(fontName)) {
+		throw Error(`font name "${fontName}" should be "${newFontName}"`);
+	}
+
 	const fontFace: FontFace = {
-		fontName,
-		fontId: fontName.toLowerCase().replace(/\s/g, '_'),
+		fontName: newFontName,
+		fontId: textToId(newFontName),
 		familyName,
-		familyId: familyName.toLowerCase().replace(/\s/g, '_'),
+		familyId: textToId(familyName),
 		styleName,
 		italic,
 		weight,

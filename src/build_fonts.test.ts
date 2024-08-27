@@ -76,7 +76,7 @@ describe('build fonts', () => {
 			.toStrictEqual([['dist', { recursive: true }]]);
 
 		expect(jest.mocked(getFontSources).mock.calls)
-			.toStrictEqual([['font-sources']]);
+			.toStrictEqual([['fonts']]);
 
 		expect(jest.mocked(buildAllGlyphs).mock.calls)
 			.toStrictEqual([[[fontSource]]]);

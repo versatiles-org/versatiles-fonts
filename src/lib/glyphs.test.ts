@@ -6,10 +6,10 @@ jest.unstable_mockModule('./progress.ts', () => ({
 	Progress: function () {
 		return {
 			increase: () => {
-				return; 
+				return;
 			},
 			finish: () => {
-				return; 
+				return;
 			},
 		};
 	},
@@ -20,7 +20,8 @@ const { getFontSources } = await import('./fonts.ts');
 describe('buildAllGlyphs', () => {
 	it('should build all glyphs from font sources', async () => {
 		process.chdir(new URL('../../', import.meta.url).pathname);
-		const fontSources = getFontSources('font-sources')
+
+		const fontSources = getFontSources('fonts')
 			.filter(f => f.fontFace.fontId === 'fira_sans_bold');
 
 		const result = await buildAllGlyphs(fontSources);
@@ -28,7 +29,7 @@ describe('buildAllGlyphs', () => {
 		expect(Array.isArray(result)).toBe(true);
 		expect(result.length).toBe(1);
 		expect(result[0].fontFace).toStrictEqual({
-			fontName: 'Fira Sans Bold',
+			fontName: 'Fira Sans - Bold',
 			fontId: 'fira_sans_bold',
 			familyName: 'Fira Sans',
 			familyId: 'fira_sans',
