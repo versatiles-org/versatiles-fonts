@@ -23,7 +23,7 @@ export async function buildAllGlyphs(fonts: FontSourcesWrapper[]): Promise<FontG
 	const fontRanges = [];
 	for (const font of fonts) {
 		for (const bufferFont of font.sources) {
-			const ranges = await getGlyphRanges(bufferFont, font.fontFace);
+			const ranges = await getGlyphRanges(bufferFont);
 			for (const range of ranges) {
 				fontRanges.push({
 					...range,
@@ -98,7 +98,7 @@ export async function buildAllGlyphs(fonts: FontSourcesWrapper[]): Promise<FontG
 	return Array.from(fontGlyphsWrappers.values());
 }
 
-async function getGlyphRanges(buffer: Buffer, fontFace: FontFace): Promise<{ charCount: number; start: number; end: number }[]> {
+async function getGlyphRanges(buffer: Buffer): Promise<{ charCount: number; start: number; end: number }[]> {
 	// eslint-disable-next-line @typescript-eslint/naming-convention
 	const result = await new Promise<{ family_name: string; style_name: string; points: number[] }[]>(resolve => {
 		fontnik.load(buffer, (err, points) => {
@@ -108,24 +108,7 @@ async function getGlyphRanges(buffer: Buffer, fontFace: FontFace): Promise<{ cha
 	});
 	if (result.length !== 1) throw Error();
 
-
-	// eslint-disable-next-line @typescript-eslint/naming-convention, prefer-const
-	let [{ family_name, style_name, points }] = result;
-
-	family_name = family_name.replace(/([a-z])([A-Z])/g, '$1 $2');
-	if (!family_name.startsWith(fontFace.familyName)) {
-		throw Error(`Family name "${family_name}" does not start with "${fontFace.familyName}"`);
-	}
-
-	style_name = style_name.replace(/([a-z])([A-Z])/g, '$1 $2');
-	if (style_name.startsWith('Hairline')) style_name = style_name.replace('Hairline', 'Thin');
-	if (style_name.startsWith('Regular ')) style_name = style_name.replace('Regular ', '');
-	style_name = style_name.trim().replace(/\s{2,}/g, ' ');
-
-	if (style_name !== fontFace.styleName) {
-		console.log(result);
-		throw Error(`Style name "${style_name}" !== "${fontFace.styleName}"`);
-	}
+	const [{ points }] = result;
 
 	const ranges = defaultRanges.map(range => ({ ...range, charCount: 0 }));
 	points.forEach(charIndex => {
