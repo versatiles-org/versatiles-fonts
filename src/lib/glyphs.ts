@@ -99,7 +99,7 @@ export async function buildAllGlyphs(fonts: FontSourcesWrapper[]): Promise<FontG
 }
 
 async function getGlyphRanges(buffer: Buffer): Promise<{ charCount: number; start: number; end: number }[]> {
-	// eslint-disable-next-line @typescript-eslint/naming-convention
+	 
 	const result = await new Promise<{ family_name: string; style_name: string; points: number[] }[]>(resolve => {
 		fontnik.load(buffer, (err, points) => {
 			if (err) throw Error(err);

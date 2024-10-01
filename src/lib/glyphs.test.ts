@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
-/* eslint-disable @typescript-eslint/naming-convention */
+ 
+ 
 import { jest } from '@jest/globals';
 
 jest.unstable_mockModule('./progress.ts', () => ({

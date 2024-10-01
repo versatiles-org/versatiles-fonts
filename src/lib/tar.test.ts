@@ -14,7 +14,7 @@ jest.unstable_mockModule('node:fs', () => ({
 }));
 
 const { createWriteStream } = await import('node:fs');
-// eslint-disable-next-line @typescript-eslint/naming-convention
+ 
 const { TarPacker } = await import('./tar.ts');
 
 describe('TarPacker', () => {

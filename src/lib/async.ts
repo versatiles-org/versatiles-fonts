@@ -10,7 +10,7 @@ export async function runParallel<T>(items: T[], cb: ((item: T) => Promise<void>
 		if (count >= maxConcurrency) await waitTillLowerThan(maxConcurrency);
 		count++;
 		const promise = cb(item);
-		// eslint-disable-next-line @typescript-eslint/no-loop-func
+		 
 		void promise.then(() => {
 			count--;
 			if (listener) listener();

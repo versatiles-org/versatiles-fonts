@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-/* eslint-disable @typescript-eslint/unbound-method */
-/* eslint-disable @typescript-eslint/naming-convention */
+ 
+ 
 
 import { jest } from '@jest/globals';
 import type { FontFace, FontSourcesWrapper } from './lib/fonts.ts';

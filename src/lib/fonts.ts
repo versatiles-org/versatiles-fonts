@@ -63,7 +63,7 @@ function getFontFace(fontName: string, familyName: string): FontFace {
 	if (!variation.startsWith(familyName)) throw Error(`fontName "${fontName}" does not start with familyName "${familyName}"`);
 	variation = variation.slice(familyName.length).toLowerCase();
 
-	// eslint-disable-next-line @typescript-eslint/naming-convention
+	 
 	const weight: FontFace['weight'] = extractVariation({ thin: 100, 'extra light': 200, light: 300, regular: 400, medium: 500, 'semi bold': 600, 'semibold': 600, 'web bold': 700, 'extra bold': 800, bold: 700, black: 900 }, 400);
 	const italic: FontFace['italic'] = extractVariation({ italic: true }, false);
 
