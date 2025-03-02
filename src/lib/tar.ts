@@ -21,8 +21,8 @@ async function packFonts(tarGzFilename: string, fonts: FontGlyphsWrapper[]): Pro
 		}
 	}
 
-	// add fonts.json
-	pack.entry({ name: 'fonts.json' }, JSON.stringify(fonts.map(f => f.fontFace.fontId), null, '\t'));
+	// add index.json
+	pack.entry({ name: 'index.json' }, JSON.stringify(fonts.map(f => f.fontFace.fontId), null, '\t'));
 
 	type VFontFamilies = Record<string, VFontFamily>;
 	interface VFontFamily {

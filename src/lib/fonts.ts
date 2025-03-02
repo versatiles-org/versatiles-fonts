@@ -26,7 +26,7 @@ export function getFontSources(inputDir: string): FontSourcesWrapper[] {
 		if (!lstatSync(dirInFont).isDirectory()) return;
 		let fonts = new Array<{ name: string; sources: string[] }>();
 
-		const fontFile = resolve(dirInFont, 'fonts.json');
+		const fontFile = resolve(dirInFont, 'index.json');
 		if (existsSync(fontFile)) {
 			fonts = JSON.parse(readFileSync(fontFile, 'utf8')) as { name: string; sources: string[] }[];
 		} else {

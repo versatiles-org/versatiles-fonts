@@ -4,7 +4,7 @@ import { jest } from '@jest/globals';
 
 const mockFiles: Record<string, string[]> = {
 	'/fonts': ['Family 1', 'Family 2', '_ignoredDirectory'],
-	'/fonts/Family 1': ['fonts.json', 'Family 1 bold.otf', 'Family 1 - Italic.ttf', 'Family_1_regular.otf'],
+	'/fonts/Family 1': ['index.json', 'Family 1 bold.otf', 'Family 1 - Italic.ttf', 'Family_1_regular.otf'],
 	'/fonts/Family 2': ['Family 2 bold.ttf', 'Family_2_italic.otf'],
 };
 
@@ -15,7 +15,7 @@ jest.unstable_mockModule('node:fs', () => ({
 		isDirectory: (): boolean => Object.keys(mockFiles).includes(path),
 	})),
 	readFileSync: jest.fn((path: string) => {
-		if (path === '/fonts/family1/fonts.json') {
+		if (path === '/fonts/family1/index.json') {
 			return JSON.stringify([{ name: 'Family 1 - Regular', sources: ['font1.otf', 'font2.ttf'] }]);
 		}
 		return `content of ${path}`;
