@@ -5,6 +5,7 @@ import { getFontSources } from './lib/fonts.ts';
 import { TarPacker } from './lib/tar.ts';
 import type { FontGlyphsWrapper } from './lib/glyphs.ts';
 import { buildAllGlyphs } from './lib/glyphs.ts';
+import { resolve } from 'node:path';
 
 
 
@@ -19,8 +20,8 @@ console.log('scan for fonts');
 const fontSources = getFontSources('fonts');
 
 
-
-const fontGlyphs = await buildAllGlyphs(fontSources);
+const tempDir = resolve('dist/tmp');
+const fontGlyphs = buildAllGlyphs(fontSources, tempDir);
 
 
 

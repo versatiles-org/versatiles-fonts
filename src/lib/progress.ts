@@ -30,7 +30,7 @@ export class Progress {
 		this.render();
 	}
 
-	public increase(value: number): void {
+	public increase(value: number = 1): void {
 		this.value += value;
 		this.render();
 	}

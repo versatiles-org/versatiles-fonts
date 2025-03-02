@@ -64,7 +64,7 @@ export class TarPacker {
 	private readonly todos: { filename: string; fonts: FontGlyphsWrapper[]; size: number }[] = [];
 
 	public add(filename: string, fonts: FontGlyphsWrapper[]): void {
-		this.todos.push({ filename, fonts, size: fonts.reduce((s, f) => s + f.glyphSize, 0) });
+		this.todos.push({ filename, fonts, size: fonts.reduce((sum, f) => sum + f.size, 0) });
 	}
 
 	public async run(): Promise<void> {

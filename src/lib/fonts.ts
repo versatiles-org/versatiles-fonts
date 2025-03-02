@@ -2,7 +2,8 @@ import { existsSync, lstatSync, readFileSync, readdirSync } from 'node:fs';
 import { basename, resolve } from 'node:path';
 
 export interface FontSourcesWrapper {
-	sources: Buffer[];
+	filenames: string[];
+	size: number;
 	fontFace: FontFace;
 }
 
@@ -26,7 +27,7 @@ export function getFontSources(inputDir: string): FontSourcesWrapper[] {
 		if (!lstatSync(dirInFont).isDirectory()) return;
 		let fonts = new Array<{ name: string; sources: string[] }>();
 
-		const fontFile = resolve(dirInFont, 'index.json');
+		const fontFile = resolve(dirInFont, 'fonts.json');
 		if (existsSync(fontFile)) {
 			fonts = JSON.parse(readFileSync(fontFile, 'utf8')) as { name: string; sources: string[] }[];
 		} else {
@@ -42,14 +43,15 @@ export function getFontSources(inputDir: string): FontSourcesWrapper[] {
 		}
 
 		fonts.forEach(font => {
-			const sources = font.sources
+			const filenames = font.sources
 				.filter(filename => !filename.startsWith('#'))
-				.map(filename => readFileSync(resolve(dirInFont, filename)));
+				.map(filename => resolve(dirInFont, filename));
 
-			if (sources.length <= 0) throw Error();
+			if (filenames.length <= 0) throw Error();
 
 			todos.push({
-				sources,
+				filenames,
+				size: filenames.reduce((sum, filename) => sum + lstatSync(filename).size, 0),
 				fontFace: getFontFace(font.name, dirName),
 			});
 		});
@@ -63,7 +65,7 @@ function getFontFace(fontName: string, familyName: string): FontFace {
 	if (!variation.startsWith(familyName)) throw Error(`fontName "${fontName}" does not start with familyName "${familyName}"`);
 	variation = variation.slice(familyName.length).toLowerCase();
 
-	 
+
 	const weight: FontFace['weight'] = extractVariation({ thin: 100, 'extra light': 200, light: 300, regular: 400, medium: 500, 'semi bold': 600, 'semibold': 600, 'web bold': 700, 'extra bold': 800, bold: 700, black: 900 }, 400);
 	const italic: FontFace['italic'] = extractVariation({ italic: true }, false);
 
