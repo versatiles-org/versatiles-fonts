@@ -8,27 +8,39 @@ on:
 
 jobs:
   release:
-    name: Build and release
+    name: Build and Release
     runs-on: ubuntu-latest
-    env:
-      GH_TOKEN: ${{ github.token }}
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out repository
+        uses: actions/checkout@v4
 
-      - name: get version
-        run: 'echo "RELEASE_TAG=v$(jq -r ''.version'' package.json)" >> $GITHUB_ENV'
+      - name: Install versatiles_glyphs
+        run: |
+          curl -Ls \
+            "https://github.com/versatiles-org/versatiles-glyphs-rs/raw/refs/heads/main/scripts/install.sh" \
+            | sh
 
-      - run: npm ci --omit dev
-      - run: npm run build
+      - name: Build fonts
+        run: ./scripts/build.sh
 
-      - name: create release if needed
-        run: gh release view $RELEASE_TAG || gh release create $RELEASE_TAG
+      # Extract Version from GitHub Tag and store the tag name (e.g. "v1.2.3") in RELEASE_TAG.
+      - name: Get Version from GitHub Tag
+        id: get_tag
+        run: echo "RELEASE_TAG=${GITHUB_REF##*/}" >> $GITHUB_ENV
 
-      - name: upload files to release
-        run: gh release upload $RELEASE_TAG --clobber dist/*.tar.gz
+      # Upload files to the existing (pre)release
+      - name: Upload files to release
+        run: gh release upload "${RELEASE_TAG}" dist/*.tar.gz --clobber
+        env:
+          RELEASE_TAG: ${{ env.RELEASE_TAG }}
 
-      - name: update release
-        run: gh release edit $RELEASE_TAG --draft=false --latest --prerelease=false
+      # Publish the release (remove draft, prerelease flags, etc.)
+      - name: Publish release
+        run: gh release edit "${RELEASE_TAG}" --draft=false --latest --prerelease=false
+        env:
+          RELEASE_TAG: ${{ env.RELEASE_TAG }}
 
-      - name: trigger frontend release
-        run: 'curl -XPOST -u "michaelkreil:${{secrets.PAT_TOKEN}}" https://api.github.com/repos/versatiles-org/versatiles-frontend/actions/workflows/release.yml/dispatches --data ''{"ref":"main"}'''
+      - name: Trigger frontend release
+        run: |
+          curl -XPOST -u "michaelkreil:${{ secrets.PAT_TOKEN }}" "https://api.github.com/repos/versatiles-org/versatiles-frontend/actions/workflows/release.yml/dispatches" --data '{"ref":"main"}'
