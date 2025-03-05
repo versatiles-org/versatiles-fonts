@@ -24,13 +24,13 @@ jobs:
             "https://github.com/versatiles-org/versatiles-glyphs-rs/raw/refs/heads/main/scripts/install.sh" \
             | sh
 
-      - name: Build fonts
-        run: ./scripts/build.sh
-
-      # Extract Version from GitHub Tag and store the tag name (e.g. "v1.2.3") in RELEASE_TAG.
-      - name: Get Version from GitHub Tag
+      # Get latest release tag and store the tag name (e.g. "v1.2.3") in RELEASE_TAG.
+      - name: Get Version
         id: get_tag
         run: echo "RELEASE_TAG=$(gh release list --limit 1 --json tagName -q '.[0].tagName')" >> $GITHUB_ENV
+
+      - name: Build fonts
+        run: ./scripts/build.sh
 
       # Upload files to the existing (pre)release
       - name: Upload files to release
