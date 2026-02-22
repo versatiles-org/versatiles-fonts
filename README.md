@@ -1,5 +1,7 @@
-[![Latest Release](https://img.shields.io/github/v/release/versatiles-org/versatiles-fonts)](https://github.com/versatiles-org/versatiles-fonts/releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/versatiles-org/versatiles-fonts/total)](https://github.com/versatiles-org/versatiles-fonts/releases/latest)
+[![GitHub release](https://img.shields.io/github/v/release/versatiles-org/versatiles-fonts)](https://github.com/versatiles-org/versatiles-fonts/releases/latest)
+[![GitHub downloads](https://img.shields.io/github/downloads/versatiles-org/versatiles-fonts/total)](https://github.com/versatiles-org/versatiles-fonts/releases/latest)
+[![CI status](https://img.shields.io/github/actions/workflow/status/versatiles-org/versatiles-fonts/release.yml)](https://github.com/versatiles-org/versatiles-fonts/actions/workflows/release.yml)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 # VersaTiles Fonts
 
