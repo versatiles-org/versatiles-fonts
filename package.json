@@ -1,0 +1,22 @@
+{
+	"name": "versatiles-fonts",
+	"version": "0.0.0",
+	"private": true,
+	"description": "Free font glyphs tailored for map rendering.",
+	"license": "MIT",
+	"type": "module",
+	"scripts": {
+		"update-fonts": "tsx scripts/update-fonts.ts",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"fontkit": "^2.0.4",
+		"subset-font": "^2.5.0"
+	},
+	"devDependencies": {
+		"@types/fontkit": "^2.0.9",
+		"@types/node": "^24.0.0",
+		"tsx": "^4.22.4",
+		"typescript": "^5.7.0"
+	}
+}
