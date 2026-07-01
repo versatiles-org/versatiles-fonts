@@ -307,7 +307,8 @@ function withNameTable(font: Buffer, nameTable: Buffer): Buffer {
 function buildNameTable(family: string, style: string): Buffer {
 	const italic = style === 'Italic' || style.endsWith(' Italic');
 	const weight = style === 'Italic' ? 'Regular' : style.replace(/ Italic$/, '');
-	const token = WEIGHT_TOKEN[weight] ?? weight;
+	const token = WEIGHT_TOKEN[weight];
+	if (token === undefined) throw new Error(`buildNameTable: unknown weight '${weight}' in style '${style}'`);
 	const nonRibbi = weight !== 'Regular' && weight !== 'Bold';
 	const records: [number, string][] = [
 		[1, nonRibbi ? `${family} ${token}` : family], // Family
