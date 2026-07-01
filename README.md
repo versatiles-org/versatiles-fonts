@@ -9,12 +9,17 @@
 
 ## Installation
 
-Clone the repository and install dependencies:
+Clone the repository:
 
 ```bash
 git clone git@github.com:versatiles-org/versatiles-fonts.git
 cd versatiles-fonts
-npm install
+```
+
+Building requires the [`versatiles_glyphs`](https://github.com/versatiles-org/versatiles-glyphs-rs) binary. Install it with:
+
+```bash
+curl -Ls "https://github.com/versatiles-org/versatiles-glyphs-rs/raw/refs/heads/main/scripts/install.sh" | sh
 ```
 
 ## Building
@@ -22,7 +27,7 @@ npm install
 To generate the font files, run:
 
 ```bash
-npm run build
+./scripts/build.sh
 ```
 
 This will create:
