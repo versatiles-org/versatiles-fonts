@@ -20,7 +20,7 @@ import { createWriteStream, existsSync, mkdirSync, rmSync, statSync } from 'node
 import { join } from 'node:path';
 import { createGzip } from 'node:zlib';
 import { pipeline } from 'node:stream/promises';
-import config from '../fonts.config.ts';
+import { build } from '../fonts.config.ts';
 
 const FONTS_DIR = 'fonts';
 const GLYPHS_BIN = 'versatiles_glyphs';
@@ -56,7 +56,6 @@ function requireGlyphsBinary(): void {
 
 async function main(): Promise<void> {
 	const dryRun = process.argv.slice(2).includes('--dry-run');
-	const build = config.build;
 	const outputDir = build.outputDir ?? 'dist';
 	const level = build.gzipLevel ?? 9;
 	const combined = build.combinedArchive === undefined ? 'fonts' : build.combinedArchive;

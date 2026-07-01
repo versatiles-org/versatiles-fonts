@@ -38,7 +38,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { create as createFont, type Font } from 'fontkit';
 import subsetFont from 'subset-font';
-import config, { type FontsConfig } from '../fonts.config.ts';
+import { fonts, styleSets, type FontEntry, type StyleSets } from '../fonts.config.ts';
 
 // --- style ladder -----------------------------------------------------------
 const WEIGHTS: Record<string, number> = {
@@ -85,10 +85,9 @@ interface Target {
 	style: string;
 }
 
-function loadTargets(cfg: FontsConfig): Target[] {
-	const styleSets = cfg.styleSets;
+function loadTargets(fonts: FontEntry[], styleSets: StyleSets): Target[] {
 	const targets: Target[] = [];
-	for (const entry of cfg.fonts) {
+	for (const entry of fonts) {
 		const name = entry.name ?? entry.dir;
 		const slug = entry.source ?? slugify(name);
 		const axes = entry.axes ?? {};
@@ -352,7 +351,7 @@ async function main(): Promise<number> {
 		}
 	}
 
-	let targets = loadTargets(config);
+	let targets = loadTargets(fonts, styleSets);
 	if (only.size) {
 		targets = targets.filter((t) => only.has(t.dir) || only.has(t.name));
 		if (!targets.length) {
