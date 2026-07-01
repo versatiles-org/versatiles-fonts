@@ -8,6 +8,7 @@
 	"scripts": {
 		"build": "node scripts/build.ts",
 		"update-fonts": "node scripts/update-fonts.ts",
+		"glyph-diff": "node scripts/glyph-diff.ts",
 		"typecheck": "tsc --noEmit",
 		"format": "prettier --write .",
 		"format:check": "prettier --check .",
