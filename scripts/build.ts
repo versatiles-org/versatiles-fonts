@@ -2,7 +2,7 @@
 /**
  * Generate the glyph archives in dist/ from the fonts in fonts/.
  *
- * What gets packaged is configured in the "build" section of fonts.config.json.
+ * What gets packaged is configured in the "build" section of fonts.config.ts.
  *
  * Produces:
  *   - dist/<combinedArchive>.tar.gz  — all glyphs (the whole fonts/ tree)
@@ -16,24 +16,14 @@
  *   npm run build -- --dry-run    # print the plan without running
  */
 import { spawn, execFileSync } from 'node:child_process';
-import { createWriteStream, existsSync, mkdirSync, readFileSync, rmSync, statSync } from 'node:fs';
+import { createWriteStream, existsSync, mkdirSync, rmSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { createGzip } from 'node:zlib';
 import { pipeline } from 'node:stream/promises';
+import config from '../fonts.config.ts';
 
 const FONTS_DIR = 'fonts';
-const CONFIG_PATH = 'fonts.config.json';
 const GLYPHS_BIN = 'versatiles_glyphs';
-
-interface BuildConfig {
-	outputDir?: string;
-	gzipLevel?: number;
-	combinedArchive?: string | null;
-	families?: string[];
-}
-interface Config {
-	build?: BuildConfig;
-}
 
 /** "Fira Sans Extra Condensed" -> "fira_sans_extra_condensed". */
 const archiveSlug = (dir: string) => dir.toLowerCase().replace(/[\s-]/g, '_');
@@ -66,8 +56,7 @@ function requireGlyphsBinary(): void {
 
 async function main(): Promise<void> {
 	const dryRun = process.argv.slice(2).includes('--dry-run');
-	const cfg = JSON.parse(readFileSync(CONFIG_PATH, 'utf8')) as Config;
-	const build = cfg.build ?? {};
+	const build = config.build;
 	const outputDir = build.outputDir ?? 'dist';
 	const level = build.gzipLevel ?? 9;
 	const combined = build.combinedArchive === undefined ? 'fonts' : build.combinedArchive;

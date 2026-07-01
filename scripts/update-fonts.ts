@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * Download/refresh the fonts in fonts/ as declared in fonts.config.json,
+ * Download/refresh the fonts in fonts/ as declared in fonts.config.ts,
  * using the latest upstream from github.com/google/fonts.
  *
- * fonts.config.json is the single source of truth for which fonts this repo
+ * fonts.config.ts is the single source of truth for which fonts this repo
  * ships. Each entry names an output folder, the upstream family on
  * github.com/google/fonts, and the styles to produce. This script materializes
  * each declared file:
@@ -38,6 +38,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { create as createFont, type Font } from 'fontkit';
 import subsetFont from 'subset-font';
+import config, { type FontsConfig } from '../fonts.config.ts';
 
 // --- style ladder -----------------------------------------------------------
 const WEIGHTS: Record<string, number> = {
@@ -76,17 +77,6 @@ function parseStyle(style: string): [number, boolean] | null {
 }
 
 // --- config -----------------------------------------------------------------
-interface FontEntry {
-	dir: string;
-	name?: string;
-	source?: string;
-	axes?: Record<string, number>;
-	styles: string | string[];
-}
-interface Config {
-	styleSets?: Record<string, string[]>;
-	fonts: FontEntry[];
-}
 interface Target {
 	dir: string;
 	name: string;
@@ -95,9 +85,8 @@ interface Target {
 	style: string;
 }
 
-function loadTargets(configPath: string): Target[] {
-	const cfg = JSON.parse(readFileSync(configPath, 'utf8')) as Config;
-	const styleSets = cfg.styleSets ?? {};
+function loadTargets(cfg: FontsConfig): Target[] {
+	const styleSets = cfg.styleSets;
 	const targets: Target[] = [];
 	for (const entry of cfg.fonts) {
 		const name = entry.name ?? entry.dir;
@@ -348,15 +337,13 @@ async function main(): Promise<number> {
 	const only = new Set<string>();
 	let dryRun = false,
 		printSlugs = false;
-	let configPath = 'fonts.config.json',
-		fontsDir = 'fonts';
+	let fontsDir = 'fonts';
 	let workDir = process.env.WORK_DIR ?? join(tmpdir(), 'versatiles-fonts-update');
 	for (let i = 0; i < argv.length; i++) {
 		const a = argv[i];
 		if (a === '--dry-run') dryRun = true;
 		else if (a === '--print-slugs') printSlugs = true;
 		else if (a === '--only') only.add(argv[++i]);
-		else if (a === '--config') configPath = argv[++i];
 		else if (a === '--fonts-dir') fontsDir = argv[++i];
 		else if (a === '--work-dir') workDir = argv[++i];
 		else {
@@ -365,7 +352,7 @@ async function main(): Promise<number> {
 		}
 	}
 
-	let targets = loadTargets(configPath);
+	let targets = loadTargets(config);
 	if (only.size) {
 		targets = targets.filter((t) => only.has(t.dir) || only.has(t.name));
 		if (!targets.length) {

@@ -35,7 +35,7 @@ This will create:
 - A `dist/fonts.tar.gz` archive containing all glyphs.
 - Separate archives `dist/{font_family}.tar.gz` for each individual font family.
 
-Which families are packaged is driven by `fonts.config.json` (the `build` section and the `fonts` list), so no font list is hardcoded in the build script.
+Which families are packaged is driven by `fonts.config.ts` (the `build` section), so no font list is hardcoded in the build script.
 
 ## Available Fonts
 
