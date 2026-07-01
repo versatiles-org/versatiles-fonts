@@ -6,11 +6,14 @@
 	"license": "MIT",
 	"type": "module",
 	"scripts": {
-		"update-fonts": "tsx scripts/update-fonts.ts",
+		"update-fonts": "node scripts/update-fonts.ts",
 		"typecheck": "tsc --noEmit",
 		"format": "prettier --write .",
 		"format:check": "prettier --check .",
 		"check": "npm run typecheck && npm run format:check"
+	},
+	"engines": {
+		"node": ">=24"
 	},
 	"dependencies": {
 		"fontkit": "^2.0.4",
@@ -20,7 +23,6 @@
 		"@types/fontkit": "^2.0.9",
 		"@types/node": "^24.0.0",
 		"prettier": "^3.9.4",
-		"tsx": "^4.22.4",
 		"typescript": "^5.7.0"
 	}
 }

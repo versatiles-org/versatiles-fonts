@@ -9,6 +9,7 @@
 		"esModuleInterop": true,
 		"skipLibCheck": true,
 		"noEmit": true,
+		"erasableSyntaxOnly": true,
 		"forceConsistentCasingInFileNames": true
 	},
 	"include": ["scripts/**/*.ts"]

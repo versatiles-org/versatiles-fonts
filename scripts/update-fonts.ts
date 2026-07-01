@@ -1,4 +1,4 @@
-#!/usr/bin/env tsx
+#!/usr/bin/env node
 /**
  * Download/refresh the fonts in fonts/ as declared in fonts.config.json,
  * using the latest upstream from github.com/google/fonts.
