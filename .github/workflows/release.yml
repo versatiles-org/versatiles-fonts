@@ -20,6 +20,11 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v7
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
       - name: Install versatiles_glyphs
         run: |
           curl -Ls \
@@ -32,7 +37,7 @@ jobs:
         run: echo "RELEASE_TAG=$(gh release list --limit 1 --json tagName -q '.[0].tagName')" >> $GITHUB_ENV
 
       - name: Build fonts
-        run: ./scripts/build.sh
+        run: npm run build
 
       # Upload files to the existing (pre)release
       - name: Upload files to release

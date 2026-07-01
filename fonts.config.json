@@ -1,4 +1,21 @@
 {
+	"build": {
+		"outputDir": "dist",
+		"gzipLevel": 9,
+		"combinedArchive": "fonts",
+		"families": [
+			"Fira Sans",
+			"Lato",
+			"Libre Baskerville",
+			"Merriweather Sans",
+			"Noto Sans",
+			"Nunito",
+			"Open Sans",
+			"PT Sans",
+			"Roboto",
+			"Source Sans 3"
+		]
+	},
 	"styleSets": {
 		"regular-bold": ["Regular", "Bold"],
 		"latin-full": [

@@ -6,6 +6,7 @@
 	"license": "MIT",
 	"type": "module",
 	"scripts": {
+		"build": "node scripts/build.ts",
 		"update-fonts": "node scripts/update-fonts.ts",
 		"typecheck": "tsc --noEmit",
 		"format": "prettier --write .",
