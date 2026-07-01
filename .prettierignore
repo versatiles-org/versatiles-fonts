@@ -1,0 +1,7 @@
+.github/
+coverage/
+dist/
+fonts/
+node_modules/
+package-lock.json
+package.json

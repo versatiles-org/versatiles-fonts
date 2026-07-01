@@ -1,9 +1,6 @@
 {
 	"styleSets": {
-		"regular-bold": [
-			"Regular",
-			"Bold"
-		],
+		"regular-bold": ["Regular", "Bold"],
 		"latin-full": [
 			"Thin",
 			"Thin Italic",
@@ -87,11 +84,7 @@
 		},
 		{
 			"dir": "Libre Baskerville",
-			"styles": [
-				"Regular",
-				"Italic",
-				"Bold"
-			]
+			"styles": ["Regular", "Italic", "Bold"]
 		},
 		{
 			"dir": "Merriweather Sans",
@@ -237,12 +230,7 @@
 		},
 		{
 			"dir": "PT Sans",
-			"styles": [
-				"Regular",
-				"Italic",
-				"Bold",
-				"Bold Italic"
-			]
+			"styles": ["Regular", "Italic", "Bold", "Bold Italic"]
 		},
 		{
 			"dir": "PT Sans Caption",

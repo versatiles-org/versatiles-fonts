@@ -24,7 +24,16 @@
  *   npm run update-fonts -- --only "Roboto"   # limit to one folder/name
  */
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, copyFileSync, readFileSync, writeFileSync, renameSync, rmSync, readdirSync } from 'node:fs';
+import {
+	existsSync,
+	mkdirSync,
+	copyFileSync,
+	readFileSync,
+	writeFileSync,
+	renameSync,
+	rmSync,
+	readdirSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { create as createFont, type Font } from 'fontkit';
@@ -32,9 +41,15 @@ import subsetFont from 'subset-font';
 
 // --- style ladder -----------------------------------------------------------
 const WEIGHTS: Record<string, number> = {
-	'Thin': 100, 'Extra Light': 200, 'Light': 300, 'Regular': 400,
-	'Medium': 500, 'Semi Bold': 600, 'Bold': 700, 'Extra Bold': 800,
-	'Black': 900,
+	Thin: 100,
+	'Extra Light': 200,
+	Light: 300,
+	Regular: 400,
+	Medium: 500,
+	'Semi Bold': 600,
+	Bold: 700,
+	'Extra Bold': 800,
+	Black: 900,
 };
 
 const LICENSE_DIRS = ['ofl', 'apache', 'ufl'];
@@ -104,8 +119,18 @@ const targetFilename = (t: Target) => `${t.name} - ${t.style}.ttf`;
 
 // --- source resolution ------------------------------------------------------
 type Axis = { min: number; default: number; max: number };
-interface VfEntry { buffer: Buffer; axes: Record<string, Axis>; italic: boolean; hasItal: boolean }
-interface StaticEntry { path: string; weight: number; italic: boolean; namekey: string }
+interface VfEntry {
+	buffer: Buffer;
+	axes: Record<string, Axis>;
+	italic: boolean;
+	hasItal: boolean;
+}
+interface StaticEntry {
+	path: string;
+	weight: number;
+	italic: boolean;
+	namekey: string;
+}
 
 class Source {
 	readonly dirName: string;
@@ -114,7 +139,9 @@ class Source {
 
 	constructor(directory: string) {
 		this.dirName = directory.split('/').pop() ?? directory;
-		for (const file of readdirSync(directory).filter(f => f.toLowerCase().endsWith('.ttf')).sort()) {
+		for (const file of readdirSync(directory)
+			.filter((f) => f.toLowerCase().endsWith('.ttf'))
+			.sort()) {
 			const path = join(directory, file);
 			const buffer = readFileSync(path);
 			const font = createFont(buffer) as Font;
@@ -134,7 +161,11 @@ class Source {
 				// "FiraSans-ExtraLight" -> "extralight". More reliable than
 				// usWeightClass, which Fira Sans / Lato set non-standard
 				// (Thin=250, Extra Light=275).
-				const token = file.replace(/\.ttf$/i, '').split('-').pop() ?? '';
+				const token =
+					file
+						.replace(/\.ttf$/i, '')
+						.split('-')
+						.pop() ?? '';
 				this.statics.push({ path, weight, italic, namekey: normStyle(token) });
 			}
 		}
@@ -143,21 +174,23 @@ class Source {
 	/** Choose the VF to instance, plus whether to drive an ital axis on it. */
 	pickVf(italic: boolean): [VfEntry, boolean] | null {
 		if (italic) {
-			const dedicated = this.vfs.find(v => v.italic);
+			const dedicated = this.vfs.find((v) => v.italic);
 			if (dedicated) return [dedicated, false];
-			const roman = this.vfs.find(v => v.hasItal);
+			const roman = this.vfs.find((v) => v.hasItal);
 			if (roman) return [roman, true];
 			return null;
 		}
-		const roman = this.vfs.find(v => !v.italic);
+		const roman = this.vfs.find((v) => !v.italic);
 		return roman ? [roman, false] : null;
 	}
 
 	pickStatic(weight: number, italic: boolean, namekey: string): StaticEntry | null {
 		// Prefer an exact style-name match (robust to non-standard weight class).
-		return this.statics.find(s => s.namekey === namekey)
-			?? this.statics.find(s => s.weight === weight && s.italic === italic)
-			?? null;
+		return (
+			this.statics.find((s) => s.namekey === namekey) ??
+			this.statics.find((s) => s.weight === weight && s.italic === italic) ??
+			null
+		);
 	}
 }
 
@@ -177,8 +210,12 @@ function resolveDir(root: string, slug: string): string | null {
 }
 
 // --- instancing -------------------------------------------------------------
-async function instanceVf(vf: VfEntry, weight: number, useItalAxis: boolean,
-	extraAxes: Record<string, number>): Promise<{ data: Buffer; clamped: string[] }> {
+async function instanceVf(
+	vf: VfEntry,
+	weight: number,
+	useItalAxis: boolean,
+	extraAxes: Record<string, number>,
+): Promise<{ data: Buffer; clamped: string[] }> {
 	const want: Record<string, number> = { wght: weight, ...extraAxes };
 	if (useItalAxis) want.ital = 1;
 
@@ -198,7 +235,7 @@ async function instanceVf(vf: VfEntry, weight: number, useItalAxis: boolean,
 
 	// Retain full unicode coverage: feed every codepoint in the source cmap.
 	const font = createFont(vf.buffer) as Font;
-	const text = (font.characterSet ?? []).map(cp => String.fromCodePoint(cp)).join('');
+	const text = (font.characterSet ?? []).map((cp) => String.fromCodePoint(cp)).join('');
 	const data = await subsetFont(vf.buffer, text, { variationAxes });
 	return { data, clamped };
 }
@@ -206,10 +243,18 @@ async function instanceVf(vf: VfEntry, weight: number, useItalAxis: boolean,
 // --- build ------------------------------------------------------------------
 type Outcome = 'ok' | 'skip' | 'miss' | 'fail';
 
-async function buildTarget(root: string, fontsDir: string, sources: Map<string, Source | null>,
-	t: Target, dryRun: boolean): Promise<Outcome> {
+async function buildTarget(
+	root: string,
+	fontsDir: string,
+	sources: Map<string, Source | null>,
+	t: Target,
+	dryRun: boolean,
+): Promise<Outcome> {
 	const parsed = parseStyle(t.style);
-	if (!parsed) { log('SKIP', `${targetFilename(t)}: unknown style '${t.style}'`); return 'skip'; }
+	if (!parsed) {
+		log('SKIP', `${targetFilename(t)}: unknown style '${t.style}'`);
+		return 'skip';
+	}
 	const [weight, italic] = parsed;
 
 	if (!sources.has(t.slug)) {
@@ -217,7 +262,10 @@ async function buildTarget(root: string, fontsDir: string, sources: Map<string, 
 		sources.set(t.slug, d ? new Source(d) : null);
 	}
 	const src = sources.get(t.slug)!;
-	if (!src) { log('MISS', `${t.name} -> no ofl/apache/ufl/${t.slug} upstream`); return 'miss'; }
+	if (!src) {
+		log('MISS', `${t.name} -> no ofl/apache/ufl/${t.slug} upstream`);
+		return 'miss';
+	}
 
 	const outDir = join(fontsDir, t.dir);
 	const out = join(outDir, targetFilename(t));
@@ -230,7 +278,10 @@ async function buildTarget(root: string, fontsDir: string, sources: Map<string, 
 			const [vf, useItal] = picked;
 			if (dryRun) {
 				const extra = Object.keys(t.axes).length ? ` ${JSON.stringify(t.axes)}` : '';
-				log('would', `${t.dir}/${targetFilename(t)}  (instance ${t.slug} wght=${weight}${italic ? ' italic' : ''}${extra})`);
+				log(
+					'would',
+					`${t.dir}/${targetFilename(t)}  (instance ${t.slug} wght=${weight}${italic ? ' italic' : ''}${extra})`,
+				);
 				return 'ok';
 			}
 			mkdirSync(outDir, { recursive: true });
@@ -243,7 +294,10 @@ async function buildTarget(root: string, fontsDir: string, sources: Map<string, 
 				log('MISS', `${targetFilename(t)}: no static wght=${weight}${italic ? ' italic' : ''} in ${src.dirName}`);
 				return 'miss';
 			}
-			if (dryRun) { log('would', `${t.dir}/${targetFilename(t)}  (copy ${stat.path.split('/').pop()})`); return 'ok'; }
+			if (dryRun) {
+				log('would', `${t.dir}/${targetFilename(t)}  (copy ${stat.path.split('/').pop()})`);
+				return 'ok';
+			}
 			mkdirSync(outDir, { recursive: true });
 			copyFileSync(stat.path, tmp);
 			note = `  <- ${stat.path.split('/').pop()}`;
@@ -273,7 +327,9 @@ function ensureCheckout(srcRepo: string): void {
 		mkdirSync(srcRepo, { recursive: true });
 		// --sparse starts the cone with only top-level files; sparseCheckout()
 		// then materializes just the families the config needs.
-		execFileSync('git', ['clone', '--filter=blob:none', '--sparse', GOOGLE_FONTS_REPO, srcRepo], { stdio: 'inherit' });
+		execFileSync('git', ['clone', '--filter=blob:none', '--sparse', GOOGLE_FONTS_REPO, srcRepo], {
+			stdio: 'inherit',
+		});
 	} else {
 		console.log('Updating existing google/fonts checkout...');
 		git(srcRepo, 'fetch', '--quiet', '--depth', '1', 'origin', 'HEAD');
@@ -282,7 +338,7 @@ function ensureCheckout(srcRepo: string): void {
 }
 
 function sparseCheckout(srcRepo: string, slugs: Set<string>): void {
-	const paths = [...slugs].sort().flatMap(slug => LICENSE_DIRS.map(lic => `${lic}/${slug}`));
+	const paths = [...slugs].sort().flatMap((slug) => LICENSE_DIRS.map((lic) => `${lic}/${slug}`));
 	git(srcRepo, 'sparse-checkout', 'set', ...paths);
 }
 
@@ -290,8 +346,10 @@ function sparseCheckout(srcRepo: string, slugs: Set<string>): void {
 async function main(): Promise<number> {
 	const argv = process.argv.slice(2);
 	const only = new Set<string>();
-	let dryRun = false, printSlugs = false;
-	let configPath = 'fonts.config.json', fontsDir = 'fonts';
+	let dryRun = false,
+		printSlugs = false;
+	let configPath = 'fonts.config.json',
+		fontsDir = 'fonts';
 	let workDir = process.env.WORK_DIR ?? join(tmpdir(), 'versatiles-fonts-update');
 	for (let i = 0; i < argv.length; i++) {
 		const a = argv[i];
@@ -301,17 +359,26 @@ async function main(): Promise<number> {
 		else if (a === '--config') configPath = argv[++i];
 		else if (a === '--fonts-dir') fontsDir = argv[++i];
 		else if (a === '--work-dir') workDir = argv[++i];
-		else { console.error(`Unknown argument: ${a}`); return 1; }
+		else {
+			console.error(`Unknown argument: ${a}`);
+			return 1;
+		}
 	}
 
 	let targets = loadTargets(configPath);
 	if (only.size) {
-		targets = targets.filter(t => only.has(t.dir) || only.has(t.name));
-		if (!targets.length) { console.error('Nothing matched --only'); return 1; }
+		targets = targets.filter((t) => only.has(t.dir) || only.has(t.name));
+		if (!targets.length) {
+			console.error('Nothing matched --only');
+			return 1;
+		}
 	}
 
-	const slugs = new Set(targets.map(t => t.slug));
-	if (printSlugs) { console.log([...slugs].sort().join('\n')); return 0; }
+	const slugs = new Set(targets.map((t) => t.slug));
+	if (printSlugs) {
+		console.log([...slugs].sort().join('\n'));
+		return 0;
+	}
 
 	const srcRepo = join(workDir, 'google-fonts');
 	ensureCheckout(srcRepo);
@@ -321,13 +388,23 @@ async function main(): Promise<number> {
 	const totals: Record<Outcome, number> = { ok: 0, skip: 0, miss: 0, fail: 0 };
 	let current = '';
 	for (const t of targets) {
-		if (t.dir !== current) { current = t.dir; console.log(`\n${current}`); }
+		if (t.dir !== current) {
+			current = t.dir;
+			console.log(`\n${current}`);
+		}
 		totals[await buildTarget(srcRepo, fontsDir, sources, t, dryRun)]++;
 	}
 
-	console.log(`\nSummary: ${totals.ok} updated, ${totals.skip} skipped, ${totals.miss} no-match, ${totals.fail} failed`);
+	console.log(
+		`\nSummary: ${totals.ok} updated, ${totals.skip} skipped, ${totals.miss} no-match, ${totals.fail} failed`,
+	);
 	console.log('\nReview changes with:  git status && git diff --stat');
 	return totals.fail ? 1 : 0;
 }
 
-main().then(code => process.exit(code)).catch(err => { console.error(err); process.exit(1); });
+main()
+	.then((code) => process.exit(code))
+	.catch((err) => {
+		console.error(err);
+		process.exit(1);
+	});

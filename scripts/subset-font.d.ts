@@ -5,9 +5,5 @@ declare module 'subset-font' {
 		variationAxes?: Record<string, number | { min: number; max: number; default?: number }>;
 		noLayoutClosure?: boolean;
 	}
-	export default function subsetFont(
-		font: Buffer,
-		text: string,
-		options?: SubsetOptions,
-	): Promise<Buffer>;
+	export default function subsetFont(font: Buffer, text: string, options?: SubsetOptions): Promise<Buffer>;
 }
