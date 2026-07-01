@@ -47,5 +47,6 @@ jobs:
           RELEASE_TAG: ${{ env.RELEASE_TAG }}
 
       - name: Trigger frontend release
-        run: |
-          curl -XPOST -u "michaelkreil:${{ secrets.PAT_TOKEN }}" "https://api.github.com/repos/versatiles-org/versatiles-frontend/actions/workflows/release.yml/dispatches" --data '{"ref":"main"}'
+        env:
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
+        run: gh workflow run release.yml --repo versatiles-org/versatiles-frontend --ref main
