@@ -48,6 +48,7 @@ VersaTiles Fonts includes the following font families:
 - **[Open Sans](https://www.opensans.com)** by Steve Matteson - [OFL](https://en.wikipedia.org/wiki/SIL_Open_Font_License)
 - **[PT Sans](https://fonts.google.com/specimen/PT+Sans)** by ParaType - [OFL](https://en.wikipedia.org/wiki/SIL_Open_Font_License)
 - **[Roboto](https://fonts.google.com/specimen/Roboto)** by Christian Robertson - [Apache 2.0 License](https://www.apache.org/licenses/LICENSE-2.0)
+- **[Roboto Condensed](https://fonts.google.com/specimen/Roboto+Condensed)** by Christian Robertson - [OFL](https://en.wikipedia.org/wiki/SIL_Open_Font_License)
 - **[Source Sans 3](https://fonts.google.com/specimen/Source+Sans+3)** by Paul D. Hunt - [OFL](https://en.wikipedia.org/wiki/SIL_Open_Font_License)
 
 ## Adding Custom Fonts
