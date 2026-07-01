@@ -24,16 +24,7 @@
  *   npm run update-fonts -- --only "Roboto"   # limit to one folder/name
  */
 import { execFileSync } from 'node:child_process';
-import {
-	existsSync,
-	mkdirSync,
-	copyFileSync,
-	readFileSync,
-	writeFileSync,
-	renameSync,
-	rmSync,
-	readdirSync,
-} from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync, rmSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { create as createFont, type Font } from 'fontkit';
@@ -228,6 +219,130 @@ async function instanceVf(
 	return { data, clamped };
 }
 
+// --- name table (SFNT surgery) ----------------------------------------------
+// harfbuzz instancing doesn't rewrite the `name` table, so every instanced
+// weight keeps the variable font's default name. These helpers let us give
+// each output a distinct, per-weight name table.
+
+/** Compact weight token used in full/PostScript names, e.g. 'Semi Bold' -> 'SemiBold'. */
+const WEIGHT_TOKEN: Record<string, string> = {
+	Thin: 'Thin',
+	'Extra Light': 'ExtraLight',
+	Light: 'Light',
+	Regular: 'Regular',
+	Medium: 'Medium',
+	'Semi Bold': 'SemiBold',
+	Bold: 'Bold',
+	'Extra Bold': 'ExtraBold',
+	Black: 'Black',
+};
+
+function readSfnt(buf: Buffer): { version: number; tables: Map<string, Buffer> } {
+	const numTables = buf.readUInt16BE(4);
+	const tables = new Map<string, Buffer>();
+	for (let i = 0, p = 12; i < numTables; i++, p += 16) {
+		const tag = buf.toString('latin1', p, p + 4);
+		const offset = buf.readUInt32BE(p + 8);
+		const length = buf.readUInt32BE(p + 12);
+		tables.set(tag, buf.subarray(offset, offset + length));
+	}
+	return { version: buf.readUInt32BE(0), tables };
+}
+
+function getTable(buf: Buffer, tag: string): Buffer | null {
+	return readSfnt(buf).tables.get(tag) ?? null;
+}
+
+function tableChecksum(data: Buffer): number {
+	let sum = 0;
+	for (let i = 0; i < data.length; i += 4) {
+		const v =
+			(data[i] ?? 0) * 0x1000000 + ((data[i + 1] ?? 0) << 16) + ((data[i + 2] ?? 0) << 8) + (data[i + 3] ?? 0);
+		sum = (sum + v) >>> 0;
+	}
+	return sum;
+}
+
+/** Reassemble a font, replacing its `name` table and fixing the head checksum. */
+function withNameTable(font: Buffer, nameTable: Buffer): Buffer {
+	const { version, tables } = readSfnt(font);
+	tables.set('name', nameTable);
+	if (tables.has('head')) {
+		const head = Buffer.from(tables.get('head')!); // clone; zero checkSumAdjustment
+		head.writeUInt32BE(0, 8);
+		tables.set('head', head);
+	}
+
+	const tags = [...tables.keys()].sort();
+	const entries = tags.map((tag) => ({ tag, data: tables.get(tag)! }));
+	let offset = 12 + entries.length * 16;
+	const layout = entries.map((e) => {
+		const at = offset;
+		offset += (e.data.length + 3) & ~3;
+		return { ...e, at };
+	});
+
+	const out = Buffer.alloc(offset);
+	out.writeUInt32BE(version, 0);
+	out.writeUInt16BE(entries.length, 4);
+	const pow = Math.floor(Math.log2(entries.length));
+	out.writeUInt16BE((1 << pow) * 16, 6);
+	out.writeUInt16BE(pow, 8);
+	out.writeUInt16BE(entries.length * 16 - (1 << pow) * 16, 10);
+	let dp = 12;
+	for (const e of layout) {
+		out.write(e.tag, dp, 4, 'latin1');
+		out.writeUInt32BE(tableChecksum(e.data), dp + 4);
+		out.writeUInt32BE(e.at, dp + 8);
+		out.writeUInt32BE(e.data.length, dp + 12);
+		e.data.copy(out, e.at);
+		dp += 16;
+	}
+	const head = layout.find((e) => e.tag === 'head');
+	if (head) out.writeUInt32BE((0xb1b0afba - tableChecksum(out)) >>> 0, head.at + 8);
+	return out;
+}
+
+/** Build a `name` table giving a font a distinct, per-weight identity. */
+function buildNameTable(family: string, style: string): Buffer {
+	const italic = style === 'Italic' || style.endsWith(' Italic');
+	const weight = style === 'Italic' ? 'Regular' : style.replace(/ Italic$/, '');
+	const token = WEIGHT_TOKEN[weight] ?? weight;
+	const nonRibbi = weight !== 'Regular' && weight !== 'Bold';
+	const records: [number, string][] = [
+		[1, nonRibbi ? `${family} ${token}` : family], // Family
+		[2, nonRibbi ? (italic ? 'Italic' : 'Regular') : italic ? `${weight} Italic`.trim() : weight], // Subfamily
+		[4, `${family} ${token}${italic ? ' Italic' : ''}`], // Full name
+		[6, `${family.replace(/\s/g, '')}-${token}${italic ? 'Italic' : ''}`], // PostScript
+		[16, family], // Typographic family
+		[17, style], // Typographic subfamily
+	];
+	const platforms = [
+		{ p: 1, e: 0, l: 0, enc: (s: string) => Buffer.from(s, 'latin1') }, // Mac Roman
+		{ p: 3, e: 1, l: 0x409, enc: (s: string) => Buffer.from(s, 'utf16le').swap16() }, // Windows UTF-16BE
+	];
+	const items = platforms
+		.flatMap((pf) => records.map(([id, str]) => ({ ...pf, id, bytes: pf.enc(str) })))
+		.sort((a, b) => a.p - b.p || a.e - b.e || a.l - b.l || a.id - b.id);
+
+	const header = Buffer.alloc(6 + items.length * 12);
+	header.writeUInt16BE(0, 0); // format 0
+	header.writeUInt16BE(items.length, 2);
+	header.writeUInt16BE(6 + items.length * 12, 4); // storage offset
+	let strOffset = 0;
+	for (let i = 0, p = 6; i < items.length; i++, p += 12) {
+		const it = items[i];
+		header.writeUInt16BE(it.p, p);
+		header.writeUInt16BE(it.e, p + 2);
+		header.writeUInt16BE(it.l, p + 4);
+		header.writeUInt16BE(it.id, p + 6);
+		header.writeUInt16BE(it.bytes.length, p + 8);
+		header.writeUInt16BE(strOffset, p + 10);
+		strOffset += it.bytes.length;
+	}
+	return Buffer.concat([header, ...items.map((it) => it.bytes)]);
+}
+
 // --- build ------------------------------------------------------------------
 type Outcome = 'ok' | 'skip' | 'miss' | 'fail';
 
@@ -258,10 +373,12 @@ async function buildTarget(
 	const outDir = join(fontsDir, t.dir);
 	const out = join(outDir, targetFilename(t));
 	const tmp = `${out}.tmp`;
+	const originalBuf = existsSync(out) ? readFileSync(out) : null;
 	const picked = src.pickVf(italic);
 
 	try {
 		let note = '';
+		let data: Buffer;
 		if (picked) {
 			const [vf, useItal] = picked;
 			if (dryRun) {
@@ -272,10 +389,9 @@ async function buildTarget(
 				);
 				return 'ok';
 			}
-			mkdirSync(outDir, { recursive: true });
-			const { data, clamped } = await instanceVf(vf, weight, useItal, t.axes);
-			writeFileSync(tmp, data);
-			if (clamped.length) note = `  clamp[${clamped.join(', ')}]`;
+			const inst = await instanceVf(vf, weight, useItal, t.axes);
+			data = inst.data;
+			if (inst.clamped.length) note = `  clamp[${inst.clamped.join(', ')}]`;
 		} else {
 			const stat = src.pickStatic(weight, italic, normStyle(t.style));
 			if (!stat) {
@@ -286,10 +402,26 @@ async function buildTarget(
 				log('would', `${t.dir}/${targetFilename(t)}  (copy ${stat.path.split('/').pop()})`);
 				return 'ok';
 			}
-			mkdirSync(outDir, { recursive: true });
-			copyFileSync(stat.path, tmp);
+			data = readFileSync(stat.path);
 			note = `  <- ${stat.path.split('/').pop()}`;
 		}
+
+		// versatiles_glyphs names each glyph folder from the font's internal
+		// name records. harfbuzz instancing leaves every weight with the
+		// variable font's default name, which would collapse all weights into
+		// one folder. Give each file a distinct name by copying the name table
+		// from the file being replaced (reproduces the previous folder names
+		// exactly); if there is none, construct one for the instanced weight.
+		const nameTable = originalBuf ? getTable(originalBuf, 'name') : null;
+		if (nameTable) {
+			data = withNameTable(data, nameTable);
+		} else if (picked) {
+			data = withNameTable(data, buildNameTable(t.name, t.style));
+			note += '  (name: constructed)';
+		}
+
+		mkdirSync(outDir, { recursive: true });
+		writeFileSync(tmp, data);
 
 		// sanity-check before overwriting the tracked file
 		const nGlyphs = (createFont(readFileSync(tmp)) as Font).numGlyphs;
