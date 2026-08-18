@@ -3,4 +3,6 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: weekly }
-    groups: { github-action: { patterns: ['*'] } }
+    groups:
+      github-action: { patterns: ['*'] }
+      security: { applies-to: security-updates, patterns: ['*'] }
