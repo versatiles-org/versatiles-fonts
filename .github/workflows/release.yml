@@ -36,6 +36,10 @@ jobs:
         id: get_tag
         run: echo "RELEASE_TAG=$(gh release list --limit 1 --json tagName -q '.[0].tagName')" >> $GITHUB_ENV
 
+      # Builds with and without --link-duplicates must extract to identical files.
+      - name: Verify hardlinked archives
+        run: npm run verify-links
+
       - name: Build fonts
         run: npm run build
 

@@ -42,6 +42,17 @@ Which families are packaged is driven by `fonts.config.ts` (the `build` section)
 
 The glyphs are signed distance fields (SDF). To keep the archives small, the build rounds the distance values to a precision of 1/8 px (`sdfStep: 4` in `fonts.config.ts`, passed to `versatiles_glyphs --sdf-step`). This makes the archives about 35% smaller, and the difference is not visible in normal map rendering. If you need full precision (1/32 px), set `sdfStep: 1` and rebuild. You can compare the steps on the [SDF step comparison page](https://versatiles.org/versatiles-glyphs-rs/sdf-step.html).
 
+### Hardlinks for duplicate ranges
+
+Some faces share glyph ranges byte for byte, e.g. Noto Sans Italic uses the same CJK fallback as Noto Sans Regular. With `linkDuplicates: true` in `fonts.config.ts`, the build writes such ranges as tar hardlinks (`versatiles_glyphs --link-duplicates`), which makes the `.tar.gz` archives much smaller. It is currently disabled, because every reader of the archives must support hardlink entries.
+
+To check that archives with hardlinks extract to exactly the same files as archives without, run:
+
+```bash
+npm run verify-links                       # the whole fonts/ tree
+npm run verify-links -- "fonts/Noto Sans"  # a single family (faster)
+```
+
 ## Available Fonts
 
 VersaTiles Fonts includes the following font families:

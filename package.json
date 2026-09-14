@@ -7,6 +7,7 @@
 	"type": "module",
 	"scripts": {
 		"build": "node scripts/build.ts",
+		"verify-links": "node scripts/verify-links.ts",
 		"update-fonts": "node scripts/update-fonts.ts",
 		"glyph-diff": "node scripts/glyph-diff.ts",
 		"typecheck": "tsc --noEmit",

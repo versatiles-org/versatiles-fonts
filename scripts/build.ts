@@ -13,7 +13,11 @@
  * Regular and Regular Italic) are compressed once. A 2^27 window stays within
  * zstd's default decoder limit, so no `--long` flag is needed to decompress.
  *
- * Glyphs are rendered with `--sdf-step build.sdfStep` (see fonts.config.ts).
+ * Glyphs are rendered with `--sdf-step build.sdfStep`, and with
+ * `--link-duplicates` if build.linkDuplicates is set (see fonts.config.ts).
+ * Each archive is a separate `recurse` run, so hardlinks never point across
+ * archives. Check that linked archives extract to the same files with
+ * `npm run verify-links`.
  *
  * Requires the `versatiles_glyphs` binary (>= 0.10.0) on PATH:
  *   curl -Ls "https://github.com/versatiles-org/versatiles-glyphs-rs/raw/refs/heads/main/scripts/install.sh" | sh
@@ -22,7 +26,7 @@
  *   npm run build
  *   npm run build -- --dry-run    # print the plan without running
  */
-import { spawn, execFileSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { createWriteStream, existsSync, mkdirSync, rmSync, statSync } from 'node:fs';
 import { availableParallelism } from 'node:os';
 import { join } from 'node:path';
@@ -30,12 +34,16 @@ import { PassThrough, type Transform } from 'node:stream';
 import { constants as zlib, createGzip, createZstdCompress } from 'node:zlib';
 import { pipeline } from 'node:stream/promises';
 import { build } from '../fonts.config.ts';
+import {
+	GLYPHS_BIN,
+	describeOptions,
+	glyphOptions,
+	recurseArgs,
+	requireGlyphsBinary,
+	type GlyphOptions,
+} from './glyphs.ts';
 
 const FONTS_DIR = 'fonts';
-const GLYPHS_BIN = 'versatiles_glyphs';
-/** First release with `--sdf-step` and deterministic output. */
-const GLYPHS_MIN_VERSION = '0.10.0';
-const SDF_STEPS = [1, 2, 4, 8, 16, 32, 64];
 
 /**
  * zstd window size (log2). 27 = 128 MiB, the largest window decoders accept by
@@ -71,8 +79,8 @@ interface Output {
  * Run `versatiles_glyphs recurse <sourceDir> --tar` once and stream the tar
  * through every compressor in parallel, each into its own output file.
  */
-async function buildArchive(sourceDir: string, sdfStep: number, outputs: Output[]): Promise<void> {
-	const proc = spawn(GLYPHS_BIN, ['recurse', sourceDir, '--tar', '--sdf-step', String(sdfStep)], {
+async function buildArchive(sourceDir: string, options: GlyphOptions, outputs: Output[]): Promise<void> {
+	const proc = spawn(GLYPHS_BIN, recurseArgs(sourceDir, options), {
 		stdio: ['ignore', 'pipe', 'inherit'],
 	});
 	const exited = new Promise<number>((resolve, reject) => {
@@ -92,34 +100,10 @@ async function buildArchive(sourceDir: string, sdfStep: number, outputs: Output[
 	if (code !== 0) throw new Error(`${GLYPHS_BIN} exited with code ${code} for "${sourceDir}"`);
 }
 
-/** Exit with an install hint unless `versatiles_glyphs` >= GLYPHS_MIN_VERSION is on PATH. */
-function requireGlyphsBinary(): void {
-	const install =
-		'  curl -Ls "https://github.com/versatiles-org/versatiles-glyphs-rs/raw/refs/heads/main/scripts/install.sh" | sh';
-	let output: string;
-	try {
-		output = execFileSync(GLYPHS_BIN, ['--version'], { encoding: 'utf8' });
-	} catch {
-		console.error(`error: '${GLYPHS_BIN}' not found on PATH. Install it with:\n${install}`);
-		process.exit(1);
-	}
-	const match = output.match(/(\d+)\.(\d+)\.(\d+)/);
-	const version = match ? match.slice(1).map(Number) : null;
-	const min = GLYPHS_MIN_VERSION.split('.').map(Number);
-	const tooOld = !version || version.reduce((cmp, v, i) => cmp || v - min[i], 0) < 0;
-	if (tooOld) {
-		console.error(
-			`error: '${GLYPHS_BIN}' ${GLYPHS_MIN_VERSION} or newer is required, found "${output.trim()}". Update it with:\n${install}`,
-		);
-		process.exit(1);
-	}
-}
-
 async function main(): Promise<void> {
 	const dryRun = process.argv.slice(2).includes('--dry-run');
 	const outputDir = build.outputDir ?? 'dist';
-	const sdfStep = build.sdfStep ?? 4;
-	if (!SDF_STEPS.includes(sdfStep)) throw new Error(`build.sdfStep must be one of ${SDF_STEPS.join(', ')}`);
+	const options = glyphOptions(build);
 	const gzipLevel = build.gzipLevel ?? 9;
 	const zstdLevel = build.zstdLevel === undefined ? 22 : build.zstdLevel;
 	const combined = build.combinedArchive === undefined ? 'fonts' : build.combinedArchive;
@@ -159,7 +143,7 @@ async function main(): Promise<void> {
 	if (dryRun) {
 		const labels = formats.map((f) => f.label).join(', ');
 		console.log(
-			`Would clean ${outputDir}/ and build ${jobs.length * formats.length} archives (--sdf-step ${sdfStep}; ${labels}):`,
+			`Would clean ${outputDir}/ and build ${jobs.length * formats.length} archives (${describeOptions(options)}; ${labels}):`,
 		);
 		for (const [src, name] of jobs) {
 			const files = formats.map((f) => `${outputDir}/${name}.${f.ext}`).join(', ');
@@ -174,7 +158,7 @@ async function main(): Promise<void> {
 
 	for (const [src, name] of jobs) {
 		const outputs = formats.map((f) => ({ file: join(outputDir, `${name}.${f.ext}`), compressor: f.compressor }));
-		await buildArchive(src, sdfStep, outputs);
+		await buildArchive(src, options, outputs);
 		for (const { file } of outputs) {
 			const kb = (statSync(file).size / 1024).toFixed(0);
 			console.log(`  ${file}  (${kb} KB)`);

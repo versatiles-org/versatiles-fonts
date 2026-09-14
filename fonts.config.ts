@@ -30,6 +30,14 @@ export interface BuildConfig {
 	 * Passed to `versatiles_glyphs --sdf-step`.
 	 */
 	sdfStep?: number;
+	/**
+	 * Write glyph ranges that are identical to an earlier range as tar hardlinks
+	 * (`versatiles_glyphs --link-duplicates`, default false). This shrinks the archives
+	 * a lot, e.g. for the Noto Sans italic faces, which share their CJK fallback with the
+	 * upright faces. Readers must support hardlink entries, so keep it off until
+	 * versatiles-org/versatiles-rs#273 and versatiles-org/versatiles-frontend#84 are released (#23).
+	 */
+	linkDuplicates?: boolean;
 	/** gzip compression level 0-9 (default 9). */
 	gzipLevel?: number;
 	/**
@@ -46,6 +54,7 @@ export interface BuildConfig {
 export const build: BuildConfig = {
 	outputDir: 'dist',
 	sdfStep: 4,
+	linkDuplicates: false,
 	gzipLevel: 9,
 	zstdLevel: 22,
 	combinedArchive: 'fonts',
