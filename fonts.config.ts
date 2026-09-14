@@ -26,7 +26,10 @@ export interface BuildConfig {
 	outputDir?: string;
 	/** gzip compression level 0-9 (default 9). */
 	gzipLevel?: number;
-	/** zstd compression level 1-22 for the additional .tar.zst archives, or null to skip them (default 22). */
+	/**
+	 * zstd compression level 1-22 for the additional .tar.zst archives, or null to skip them (default 22).
+	 * Level 22 additionally uses maximum search parameters (slower, ~4.5 GB RAM).
+	 */
 	zstdLevel?: number | null;
 	/** Name of the combined all-glyphs archive, or null to skip it. */
 	combinedArchive?: string | null;

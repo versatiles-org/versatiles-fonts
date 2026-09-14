@@ -22,6 +22,7 @@
  */
 import { spawn, execFileSync } from 'node:child_process';
 import { createWriteStream, existsSync, mkdirSync, rmSync, statSync } from 'node:fs';
+import { availableParallelism } from 'node:os';
 import { join } from 'node:path';
 import { PassThrough, type Writable } from 'node:stream';
 import { constants as zlib, createGzip, createZstdCompress } from 'node:zlib';
@@ -31,8 +32,27 @@ import { build } from '../fonts.config.ts';
 const FONTS_DIR = 'fonts';
 const GLYPHS_BIN = 'versatiles_glyphs';
 
-/** zstd window size (log2). 27 = 128 MiB, the largest window decoders accept by default. */
+/**
+ * zstd window size (log2). 27 = 128 MiB, the largest window decoders accept by
+ * default. A larger window (29) saves only ~1.4 % on the combined archive but
+ * makes `zstd -d`, `tar --zstd`, Node and versatiles-rs refuse to decompress.
+ */
 const ZSTD_WINDOW_LOG = 27;
+
+/**
+ * Search parameters beyond level 22's defaults, equivalent to
+ * `zstd --zstd=clog=30,hlog=30,slog=26,mml=3,tlen=999,strat=9`. They only
+ * affect compression (another ~0.3 % smaller, ~4.5 GB RAM and roughly twice the
+ * time for the combined archive), so decoding still works with default settings.
+ */
+const ZSTD_MAX_SEARCH = {
+	[zlib.ZSTD_c_chainLog]: 30,
+	[zlib.ZSTD_c_hashLog]: 30,
+	[zlib.ZSTD_c_searchLog]: 26,
+	[zlib.ZSTD_c_minMatch]: 3,
+	[zlib.ZSTD_c_targetLength]: 999,
+	[zlib.ZSTD_c_strategy]: zlib.ZSTD_btultra2,
+};
 
 /** "Fira Sans Extra Condensed" -> "fira_sans_extra_condensed". */
 const archiveSlug = (dir: string) => dir.toLowerCase().replace(/[\s-]/g, '_');
@@ -100,6 +120,10 @@ async function main(): Promise<void> {
 						[zlib.ZSTD_c_compressionLevel]: zstdLevel,
 						[zlib.ZSTD_c_enableLongDistanceMatching]: 1,
 						[zlib.ZSTD_c_windowLog]: ZSTD_WINDOW_LOG,
+						...(zstdLevel === 22 ? ZSTD_MAX_SEARCH : {}),
+						// Multithreaded mode matches the size of the `zstd` CLI and is slightly
+						// smaller than single-threaded mode with long-distance matching.
+						[zlib.ZSTD_c_nbWorkers]: availableParallelism(),
 					},
 				}),
 		});
