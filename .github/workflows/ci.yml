@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Check and verify hardlinks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Typecheck and formatting
+      - name: Check
+        run: npm run check
+
+      - name: Install versatiles_glyphs
+        run: |
+          curl -Ls \
+            "https://github.com/versatiles-org/versatiles-glyphs-rs/raw/refs/heads/main/scripts/install.sh" \
+            | sh
+
+      # Builds with and without --link-duplicates must extract to identical files (with GNU tar here).
+      # Noto Sans is the only family with shared fallback ranges; the release workflow verifies all of fonts/.
+      - name: Verify hardlinked archives
+        run: npm run verify-links -- "fonts/Noto Sans"
+
+      - name: Dry-run build
+        run: npm run build -- --dry-run
