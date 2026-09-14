@@ -44,7 +44,9 @@ The glyphs are signed distance fields (SDF). To keep the archives small, the bui
 
 ### Hardlinks for duplicate ranges
 
-Some faces share glyph ranges byte for byte, e.g. Noto Sans Italic uses the same CJK fallback as Noto Sans Regular. With `linkDuplicates: true` in `fonts.config.ts`, the build writes such ranges as tar hardlinks (`versatiles_glyphs --link-duplicates`), which makes the `.tar.gz` archives much smaller. It is currently disabled, because every reader of the archives must support hardlink entries.
+Some faces share glyph ranges byte for byte, e.g. Noto Sans Italic uses the same CJK fallback as Noto Sans Regular. With `linkDuplicates: true` in `fonts.config.ts` (the default here), the build writes such ranges as tar hardlinks (`versatiles_glyphs --link-duplicates`), which makes the `.tar.gz` archives much smaller (e.g. `noto_sans.tar.gz` 59 → 31 MB).
+
+**Readers of the archives must support hardlink entries.** Plain `tar -x` (GNU tar, bsdtar/macOS) does. To serve the archives directly, use [VersaTiles](https://github.com/versatiles-org/versatiles-rs) 4.14.0 or newer: older versions skip hardlink entries and return 404 for the linked ranges (e.g. the CJK ranges of the Noto Sans italic faces).
 
 To check that archives with hardlinks extract to exactly the same files as archives without, run:
 
