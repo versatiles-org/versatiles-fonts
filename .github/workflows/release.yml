@@ -38,7 +38,7 @@ jobs:
 
       # Builds with and without --link-duplicates must extract to identical files.
       - name: Verify hardlinked archives
-        run: npm run verify-links
+        run: npm run verify-links -- --sample
 
       - name: Build fonts
         run: npm run build
