@@ -53,6 +53,7 @@ To check that archives with hardlinks extract to exactly the same files as archi
 ```bash
 npm run verify-links                       # the whole fonts/ tree
 npm run verify-links -- "fonts/Noto Sans"  # a single family (faster)
+npm run verify-links -- --sample           # a small sample, takes seconds
 ```
 
 ## Available Fonts

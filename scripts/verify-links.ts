@@ -11,6 +11,10 @@
  * Usage:
  *   npm run verify-links                       # the whole fonts/ tree
  *   npm run verify-links -- "fonts/Noto Sans"  # a single family (faster)
+ *   npm run verify-links -- --sample           # a small sample, takes seconds (used in CI)
+ *
+ * `--sample` renders two faces that share fallback fonts the same way Noto Sans
+ * Regular and Regular Italic do, but without the slow CJK fonts.
  */
 import { execFileSync, spawn } from 'node:child_process';
 import {
@@ -24,9 +28,10 @@ import {
 	readSync,
 	readdirSync,
 	rmSync,
+	writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, relative } from 'node:path';
+import { join, relative, resolve } from 'node:path';
 import { pipeline } from 'node:stream/promises';
 import { build } from '../fonts.config.ts';
 import {
@@ -96,9 +101,29 @@ function compareTrees(a: string, b: string): string[] {
 	return differences;
 }
 
+/**
+ * Write a fonts.json into `dir` with two faces that share their fallback fonts:
+ * an upright face, and an italic face that falls back to the same upright files.
+ */
+function writeSample(dir: string): void {
+	const noto = resolve('fonts/Noto Sans');
+	const fallbacks = ['Arabic', 'Hebrew', 'Thai'].map((script) => join(noto, `Noto Sans ${script} - Regular.ttf`));
+	const regular = join(noto, 'Noto Sans - Regular.ttf');
+	const faces = [
+		{ name: 'Noto Sans Regular', sources: [regular, ...fallbacks] },
+		{ name: 'Noto Sans Regular Italic', sources: [join(noto, 'Noto Sans - Italic.ttf'), regular, ...fallbacks] },
+	];
+	for (const file of faces.flatMap((face) => face.sources)) {
+		if (!existsSync(file)) throw new Error(`sample font ${file} does not exist`);
+	}
+	mkdirSync(dir);
+	writeFileSync(join(dir, 'fonts.json'), JSON.stringify(faces, null, '\t'));
+}
+
 async function main(): Promise<number> {
-	const sourceDir = process.argv[2] ?? 'fonts';
-	if (!existsSync(sourceDir)) throw new Error(`${sourceDir} does not exist`);
+	const arg = process.argv[2];
+	const sample = arg === '--sample';
+	if (!sample && !existsSync(arg ?? 'fonts')) throw new Error(`${arg} does not exist`);
 	requireGlyphsBinary();
 
 	const options = glyphOptions(build);
@@ -107,6 +132,9 @@ async function main(): Promise<number> {
 
 	const work = mkdtempSync(join(tmpdir(), 'versatiles-fonts-verify-links-'));
 	try {
+		const sourceDir = sample ? join(work, 'sample') : (arg ?? 'fonts');
+		if (sample) writeSample(sourceDir);
+
 		const trees: string[] = [];
 		let hardlinks = 0;
 		for (const [name, opts] of [

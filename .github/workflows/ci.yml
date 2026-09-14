@@ -43,9 +43,9 @@ jobs:
             | sh
 
       # Builds with and without --link-duplicates must extract to identical files (with GNU tar here).
-      # Noto Sans is the only family with shared fallback ranges; the release workflow verifies all of fonts/.
+      # A small sample of faces with shared fallback fonts, so this takes seconds; the release workflow verifies all of fonts/.
       - name: Verify hardlinked archives
-        run: npm run verify-links -- "fonts/Noto Sans"
+        run: npm run verify-links -- --sample
 
       - name: Dry-run build
         run: npm run build -- --dry-run
