@@ -144,7 +144,7 @@ export const fonts: FontEntry[] = [
 	},
 	{
 		dir: 'Noto Sans',
-		styles: 'regular-bold',
+		styles: ['Regular', 'Italic', 'Bold', 'Bold Italic'],
 	},
 	{
 		dir: 'Noto Sans',
