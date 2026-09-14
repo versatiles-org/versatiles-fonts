@@ -24,6 +24,12 @@ export interface FontEntry {
 export interface BuildConfig {
 	/** Output directory for the archives (default "dist"). */
 	outputDir?: string;
+	/**
+	 * Quantize SDF values to multiples of this step: 1, 2, 4, 8, 16, 32 or 64 (default 4).
+	 * 1 keeps full precision (1/32 px), 4 means 1/8 px and makes the archives ~35 % smaller.
+	 * Passed to `versatiles_glyphs --sdf-step`.
+	 */
+	sdfStep?: number;
 	/** gzip compression level 0-9 (default 9). */
 	gzipLevel?: number;
 	/**
@@ -39,6 +45,7 @@ export interface BuildConfig {
 
 export const build: BuildConfig = {
 	outputDir: 'dist',
+	sdfStep: 4,
 	gzipLevel: 9,
 	zstdLevel: 22,
 	combinedArchive: 'fonts',

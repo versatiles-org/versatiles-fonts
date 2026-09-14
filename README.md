@@ -16,7 +16,7 @@ git clone git@github.com:versatiles-org/versatiles-fonts.git
 cd versatiles-fonts
 ```
 
-Building requires the [`versatiles_glyphs`](https://github.com/versatiles-org/versatiles-glyphs-rs) binary. Install it with:
+Building requires the [`versatiles_glyphs`](https://github.com/versatiles-org/versatiles-glyphs-rs) binary, version 0.10.0 or newer. Install or update it with:
 
 ```bash
 curl -Ls "https://github.com/versatiles-org/versatiles-glyphs-rs/raw/refs/heads/main/scripts/install.sh" | sh
@@ -37,6 +37,10 @@ This will create:
 - The same archives as `dist/*.tar.zst`, compressed with zstd level 22 and a 128 MiB long-distance window. They are roughly 40% smaller than the `.tar.gz` archives, and less than half the size for `fonts` and `noto_sans`, because identical glyph ranges shared between faces (e.g. the CJK fallback of Noto Sans Regular and Regular Italic) are compressed only once. Extract them with `tar --zstd -xf fonts.tar.zst` (GNU tar) or `tar -xf fonts.tar.zst` (bsdtar/macOS); no `--long` flag is needed.
 
 Which families are packaged is driven by `fonts.config.ts` (the `build` section), so no font list is hardcoded in the build script.
+
+### Glyph precision
+
+The glyphs are signed distance fields (SDF). To keep the archives small, the build rounds the distance values to a precision of 1/8 px (`sdfStep: 4` in `fonts.config.ts`, passed to `versatiles_glyphs --sdf-step`). This makes the archives about 35% smaller, and the difference is not visible in normal map rendering. If you need full precision (1/32 px), set `sdfStep: 1` and rebuild. You can compare the steps on the [SDF step comparison page](https://versatiles.org/versatiles-glyphs-rs/sdf-step.html).
 
 ## Available Fonts
 
