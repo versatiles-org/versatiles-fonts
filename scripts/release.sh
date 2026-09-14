@@ -1,30 +1,41 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Usage: npm run release -- <patch|minor|major> [--dry-run]
+#
+# 1) Checks that main is clean, pushed, passes `npm run check` and CI.
+# 2) Bumps the version in package.json and package-lock.json, commits and pushes it.
+# 3) Creates a GitHub prerelease at exactly that commit. Its tag starts the release
+#    workflow, which builds and uploads the archives, publishes the release and
+#    triggers the versatiles-frontend release.
+#
+# With --dry-run, only the checks run and nothing is changed.
+
 # Move to the parent of this script's directory
 cd "$(dirname "$0")/.."
 
 ORG="versatiles-org"
 REPO="versatiles-fonts"
 
-# 1) Check if an argument was provided
-if [ $# -eq 0 ]; then
-	echo "Usage: $0 <patch|minor|major>"
+# 1) Parse arguments
+INCREMENT_TYPE="${1-}"
+DRY_RUN=false
+if [ "${2-}" = "--dry-run" ]; then
+	DRY_RUN=true
+elif [ -n "${2-}" ]; then
+	echo "Error: unknown option '$2'"
 	exit 1
 fi
 
-INCREMENT_TYPE="$1"
-
-# 2) Validate argument is one of patch, minor, or major
 case "$INCREMENT_TYPE" in
 patch | minor | major) ;;
 *)
-	echo "Error: argument must be 'patch', 'minor', or 'major'"
+	echo "Usage: npm run release -- <patch|minor|major> [--dry-run]"
 	exit 1
 	;;
 esac
 
-# 3) Ensure the release is made from a clean, pushed main branch.
+# 2) Ensure the release is made from a clean, pushed main branch.
 #    The release tag is created on GitHub, so unpushed commits would not be part of it.
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 if [ "$BRANCH" != "main" ]; then
@@ -49,12 +60,12 @@ if [ "$LOCAL_SHA" != "$REMOTE_SHA" ]; then
 	exit 1
 fi
 
-# 4) Check the code (typecheck, formatting) and the build configuration
+# 3) Check the code (typecheck, formatting) and the build configuration
 echo "Checking code..."
 npm run --silent check
 npm run --silent build -- --dry-run >/dev/null
 
-# 5) Ensure CI has passed for this commit
+# 4) Ensure CI has passed for this commit
 CI_STATUS=$(gh run list -R "$ORG/$REPO" --workflow ci.yml --commit "$LOCAL_SHA" --limit 1 --json status,conclusion -q '.[0] | "\(.status) \(.conclusion)"' 2>/dev/null || true)
 case "$CI_STATUS" in
 "completed success") echo "CI passed for ${LOCAL_SHA:0:7}." ;;
@@ -63,21 +74,20 @@ completed*) echo "Error: CI failed for ${LOCAL_SHA:0:7} ($CI_STATUS)" && exit 1 
 *) echo "Error: CI for ${LOCAL_SHA:0:7} has not finished yet ($CI_STATUS). Try again later." && exit 1 ;;
 esac
 
-# 6) Get the latest release tag name (e.g. "v1.2.3") from GitHub
-#    If no releases exist, throw an error.
-LATEST_RELEASE=$(gh release list -R "$ORG/$REPO" --limit 1 --json tagName -q '.[0].tagName' 2>/dev/null || true)
+# 5) Read the current version from package.json and make sure it matches the latest release
+CURRENT_VERSION=$(node -p "require('./package.json').version")
+LATEST_RELEASE=$(gh release list -R "$ORG/$REPO" --exclude-drafts --limit 1 --json tagName -q '.[0].tagName' 2>/dev/null || true)
 if [ -z "$LATEST_RELEASE" ]; then
 	echo "Error: no releases found"
 	exit 1
 fi
+if [ "$LATEST_RELEASE" != "v$CURRENT_VERSION" ]; then
+	echo "Error: package.json version ($CURRENT_VERSION) does not match the latest release ($LATEST_RELEASE)"
+	exit 1
+fi
 
-# Strip off the leading 'v' to parse SemVer
-CURRENT_VERSION="${LATEST_RELEASE#v}"
-
-# 7) Parse the current version into major, minor, patch
+# 6) Bump according to the argument
 IFS='.' read -r major minor patch <<<"$CURRENT_VERSION"
-
-# 8) Bump according to the argument
 case "$INCREMENT_TYPE" in
 patch)
 	patch=$((patch + 1))
@@ -92,26 +102,42 @@ major)
 	patch=0
 	;;
 esac
+NEW_VERSION="${major}.${minor}.${patch}"
+NEW_TAG="v${NEW_VERSION}"
 
-# 9) Construct the new version string with a leading 'v'
-NEW_VERSION="v${major}.${minor}.${patch}"
+if git ls-remote --exit-code --tags origin "refs/tags/$NEW_TAG" >/dev/null; then
+	echo "Error: tag $NEW_TAG already exists on origin"
+	exit 1
+fi
 
-echo "Current version: $LATEST_RELEASE"
-echo "New version: $NEW_VERSION (commit ${LOCAL_SHA:0:7})"
+echo "Current version: $CURRENT_VERSION"
+echo "New version:     $NEW_VERSION"
 
-# 10) Confirm, since creating the release starts the release workflow,
-#     which publishes the archives and triggers the versatiles-frontend release.
+if [ "$DRY_RUN" = true ]; then
+	echo "Dry run: all checks passed, nothing was changed."
+	exit 0
+fi
+
+# 7) Confirm, since the release publishes the archives and triggers the versatiles-frontend release
 CONFIRM=""
-read -r -p "Create release $NEW_VERSION? [y/N] " CONFIRM || true
+read -r -p "Bump to $NEW_VERSION, push and create release $NEW_TAG? [y/N] " CONFIRM || true
 if [ "$CONFIRM" != "y" ] && [ "$CONFIRM" != "Y" ]; then
 	echo "Aborted."
 	exit 1
 fi
 
-# 11) Create a new release (which also creates the new tag) on GitHub, at exactly the checked commit
-gh release create "$NEW_VERSION" -R "$ORG/$REPO" \
-	--target "$LOCAL_SHA" \
+# 8) Bump the version, commit and push
+npm version "$NEW_VERSION" --no-git-tag-version >/dev/null
+git add package.json package-lock.json
+git commit --quiet -m "chore: release $NEW_TAG"
+git push --quiet origin main
+RELEASE_SHA=$(git rev-parse HEAD)
+
+# 9) Create the prerelease (and its tag) on GitHub at exactly the version commit
+gh release create "$NEW_TAG" -R "$ORG/$REPO" \
+	--target "$RELEASE_SHA" \
+	--title "$NEW_TAG" \
 	--generate-notes \
 	--prerelease
 
-echo "Release $NEW_VERSION created successfully."
+echo "Release $NEW_TAG created at ${RELEASE_SHA:0:7}. The release workflow builds and publishes it."
