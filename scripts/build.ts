@@ -4,9 +4,14 @@
  *
  * What gets packaged is configured in the "build" section of fonts.config.ts.
  *
- * Produces:
- *   - dist/<combinedArchive>.tar.gz  — all glyphs (the whole fonts/ tree)
- *   - dist/<family>.tar.gz           — one per family listed in build.families
+ * Produces, each as .tar.gz and (unless build.zstdLevel is null) as .tar.zst:
+ *   - dist/<combinedArchive>.tar.*  — all glyphs (the whole fonts/ tree)
+ *   - dist/<family>.tar.*           — one per family listed in build.families
+ *
+ * The .tar.zst archives use long-distance matching with a 128 MiB window, so
+ * identical ranges shared between faces (e.g. the CJK fallback of Noto Sans
+ * Regular and Regular Italic) are compressed once. A 2^27 window stays within
+ * zstd's default decoder limit, so no `--long` flag is needed to decompress.
  *
  * Requires the `versatiles_glyphs` binary on PATH:
  *   curl -Ls "https://github.com/versatiles-org/versatiles-glyphs-rs/raw/refs/heads/main/scripts/install.sh" | sh
@@ -18,18 +23,30 @@
 import { spawn, execFileSync } from 'node:child_process';
 import { createWriteStream, existsSync, mkdirSync, rmSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { createGzip } from 'node:zlib';
+import { PassThrough, type Writable } from 'node:stream';
+import { constants as zlib, createGzip, createZstdCompress } from 'node:zlib';
 import { pipeline } from 'node:stream/promises';
 import { build } from '../fonts.config.ts';
 
 const FONTS_DIR = 'fonts';
 const GLYPHS_BIN = 'versatiles_glyphs';
 
+/** zstd window size (log2). 27 = 128 MiB, the largest window decoders accept by default. */
+const ZSTD_WINDOW_LOG = 27;
+
 /** "Fira Sans Extra Condensed" -> "fira_sans_extra_condensed". */
 const archiveSlug = (dir: string) => dir.toLowerCase().replace(/[\s-]/g, '_');
 
-/** Run `versatiles_glyphs recurse <sourceDir> --tar`, gzip the output to <outFile>. */
-async function buildArchive(sourceDir: string, outFile: string, level: number): Promise<void> {
+interface Output {
+	file: string;
+	compressor: () => Writable;
+}
+
+/**
+ * Run `versatiles_glyphs recurse <sourceDir> --tar` once and stream the tar
+ * through every compressor in parallel, each into its own output file.
+ */
+async function buildArchive(sourceDir: string, outputs: Output[]): Promise<void> {
 	const proc = spawn(GLYPHS_BIN, ['recurse', sourceDir, '--tar'], {
 		stdio: ['ignore', 'pipe', 'inherit'],
 	});
@@ -37,7 +54,15 @@ async function buildArchive(sourceDir: string, outFile: string, level: number): 
 		proc.on('error', reject);
 		proc.on('close', resolve);
 	});
-	await pipeline(proc.stdout!, createGzip({ level }), createWriteStream(outFile));
+	// pipe() to several destinations pauses the source whenever any branch is
+	// backed up, so the slow zstd branch doesn't make the gzip branch buffer.
+	await Promise.all(
+		outputs.map(({ file, compressor }) => {
+			const branch = new PassThrough();
+			proc.stdout!.pipe(branch);
+			return pipeline(branch, compressor(), createWriteStream(file));
+		}),
+	);
 	const code = await exited;
 	if (code !== 0) throw new Error(`${GLYPHS_BIN} exited with code ${code} for "${sourceDir}"`);
 }
@@ -57,9 +82,28 @@ function requireGlyphsBinary(): void {
 async function main(): Promise<void> {
 	const dryRun = process.argv.slice(2).includes('--dry-run');
 	const outputDir = build.outputDir ?? 'dist';
-	const level = build.gzipLevel ?? 9;
+	const gzipLevel = build.gzipLevel ?? 9;
+	const zstdLevel = build.zstdLevel === undefined ? 22 : build.zstdLevel;
 	const combined = build.combinedArchive === undefined ? 'fonts' : build.combinedArchive;
 	const families = build.families ?? [];
+
+	const formats: { ext: string; label: string; compressor: () => Writable }[] = [
+		{ ext: 'tar.gz', label: `gzip -${gzipLevel}`, compressor: () => createGzip({ level: gzipLevel }) },
+	];
+	if (zstdLevel !== null) {
+		formats.push({
+			ext: 'tar.zst',
+			label: `zstd -${zstdLevel} --long=${ZSTD_WINDOW_LOG}`,
+			compressor: () =>
+				createZstdCompress({
+					params: {
+						[zlib.ZSTD_c_compressionLevel]: zstdLevel,
+						[zlib.ZSTD_c_enableLongDistanceMatching]: 1,
+						[zlib.ZSTD_c_windowLog]: ZSTD_WINDOW_LOG,
+					},
+				}),
+		});
+	}
 
 	// Plan: [sourceDir, archiveName]
 	const jobs: [string, string][] = [];
@@ -71,8 +115,12 @@ async function main(): Promise<void> {
 	}
 
 	if (dryRun) {
-		console.log(`Would clean ${outputDir}/ and build ${jobs.length} archives (gzip -${level}):`);
-		for (const [src, name] of jobs) console.log(`  ${outputDir}/${name}.tar.gz  <-  ${src}`);
+		const labels = formats.map((f) => f.label).join(', ');
+		console.log(`Would clean ${outputDir}/ and build ${jobs.length * formats.length} archives (${labels}):`);
+		for (const [src, name] of jobs) {
+			const files = formats.map((f) => `${outputDir}/${name}.${f.ext}`).join(', ');
+			console.log(`  ${files}  <-  ${src}`);
+		}
 		return;
 	}
 
@@ -81,12 +129,14 @@ async function main(): Promise<void> {
 	mkdirSync(outputDir, { recursive: true });
 
 	for (const [src, name] of jobs) {
-		const outFile = join(outputDir, `${name}.tar.gz`);
-		await buildArchive(src, outFile, level);
-		const kb = (statSync(outFile).size / 1024).toFixed(0);
-		console.log(`  ${outFile}  (${kb} KB)`);
+		const outputs = formats.map((f) => ({ file: join(outputDir, `${name}.${f.ext}`), compressor: f.compressor }));
+		await buildArchive(src, outputs);
+		for (const { file } of outputs) {
+			const kb = (statSync(file).size / 1024).toFixed(0);
+			console.log(`  ${file}  (${kb} KB)`);
+		}
 	}
-	console.log(`\nBuilt ${jobs.length} archives in ${outputDir}/`);
+	console.log(`\nBuilt ${jobs.length * formats.length} archives in ${outputDir}/`);
 }
 
 main().catch((err) => {

@@ -34,6 +34,7 @@ This will create:
 
 - A `dist/fonts.tar.gz` archive containing all glyphs.
 - Separate archives `dist/{font_family}.tar.gz` for each individual font family.
+- The same archives as `dist/*.tar.zst`, compressed with zstd level 22 and a 128 MiB long-distance window. They are roughly 40% smaller than the `.tar.gz` archives, and less than half the size for `fonts` and `noto_sans`, because identical glyph ranges shared between faces (e.g. the CJK fallback of Noto Sans Regular and Regular Italic) are compressed only once. Extract them with `tar --zstd -xf fonts.tar.zst` (GNU tar) or `tar -xf fonts.tar.zst` (bsdtar/macOS); no `--long` flag is needed.
 
 Which families are packaged is driven by `fonts.config.ts` (the `build` section), so no font list is hardcoded in the build script.
 

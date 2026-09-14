@@ -41,7 +41,7 @@ jobs:
 
       # Upload files to the existing (pre)release
       - name: Upload files to release
-        run: gh release upload "${RELEASE_TAG}" dist/*.tar.gz --clobber
+        run: gh release upload "${RELEASE_TAG}" dist/*.tar.gz dist/*.tar.zst --clobber
         env:
           RELEASE_TAG: ${{ env.RELEASE_TAG }}
 

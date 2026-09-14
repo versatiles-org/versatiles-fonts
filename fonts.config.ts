@@ -26,6 +26,8 @@ export interface BuildConfig {
 	outputDir?: string;
 	/** gzip compression level 0-9 (default 9). */
 	gzipLevel?: number;
+	/** zstd compression level 1-22 for the additional .tar.zst archives, or null to skip them (default 22). */
+	zstdLevel?: number | null;
 	/** Name of the combined all-glyphs archive, or null to skip it. */
 	combinedArchive?: string | null;
 	/** Family folders to also package as individual archives. */
@@ -35,6 +37,7 @@ export interface BuildConfig {
 export const build: BuildConfig = {
 	outputDir: 'dist',
 	gzipLevel: 9,
+	zstdLevel: 22,
 	combinedArchive: 'fonts',
 	families: [
 		'Fira Sans',
