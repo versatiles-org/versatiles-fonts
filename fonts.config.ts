@@ -54,7 +54,7 @@ export interface BuildConfig {
 export const build: BuildConfig = {
 	outputDir: 'dist',
 	sdfStep: 4,
-	linkDuplicates: false,
+	linkDuplicates: true,
 	gzipLevel: 9,
 	zstdLevel: 22,
 	combinedArchive: 'fonts',
