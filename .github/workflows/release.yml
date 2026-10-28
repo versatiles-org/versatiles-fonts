@@ -54,8 +54,3 @@ jobs:
         run: gh release edit "${RELEASE_TAG}" --draft=false --latest --prerelease=false
         env:
           RELEASE_TAG: ${{ env.RELEASE_TAG }}
-
-      - name: Trigger frontend release
-        env:
-          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
-        run: gh workflow run release.yml --repo versatiles-org/versatiles-frontend --ref main

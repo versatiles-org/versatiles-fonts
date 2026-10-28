@@ -6,8 +6,7 @@ set -euo pipefail
 # 1) Checks that main is clean, pushed, passes `npm run check` and CI.
 # 2) Bumps the version in package.json and package-lock.json, commits and pushes it.
 # 3) Creates a GitHub prerelease at exactly that commit. Its tag starts the release
-#    workflow, which builds and uploads the archives, publishes the release and
-#    triggers the versatiles-frontend release.
+#    workflow, which builds and uploads the archives and publishes the release.
 #
 # With --dry-run, only the checks run and nothing is changed.
 
@@ -118,7 +117,7 @@ if [ "$DRY_RUN" = true ]; then
 	exit 0
 fi
 
-# 7) Confirm, since the release publishes the archives and triggers the versatiles-frontend release
+# 7) Confirm, since the release publishes the archives
 CONFIRM=""
 read -r -p "Bump to $NEW_VERSION, push and create release $NEW_TAG? [y/N] " CONFIRM || true
 if [ "$CONFIRM" != "y" ] && [ "$CONFIRM" != "Y" ]; then
