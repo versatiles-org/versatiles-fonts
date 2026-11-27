@@ -49,6 +49,19 @@ jobs:
         env:
           RELEASE_TAG: ${{ env.RELEASE_TAG }}
 
+      # Name the versatiles_glyphs release the archives were built with, so the
+      # dependency graph can report when a newer one means they need a rebuild.
+      # A rerun replaces the section instead of adding a second one.
+      - name: Add components to release notes
+        run: |
+          GLYPHS_VERSION=$(versatiles_glyphs --version | awk '{print $2}')
+          NOTES="${RUNNER_TEMP}/notes.md"
+          gh release view "${RELEASE_TAG}" --json body -q .body | sed '/^## Components$/,$d' > "${NOTES}"
+          printf '\n## Components\n\n- [VersaTiles Glyphs v%s](https://github.com/versatiles-org/versatiles-glyphs-rs)\n' "${GLYPHS_VERSION}" >> "${NOTES}"
+          gh release edit "${RELEASE_TAG}" --notes-file "${NOTES}"
+        env:
+          RELEASE_TAG: ${{ env.RELEASE_TAG }}
+
       # Publish the release (remove draft, prerelease flags, etc.)
       - name: Publish release
         run: gh release edit "${RELEASE_TAG}" --draft=false --latest --prerelease=false
