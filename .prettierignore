@@ -5,3 +5,4 @@ fonts/
 node_modules/
 package-lock.json
 package.json
+CHANGELOG.md
