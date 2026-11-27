@@ -5,16 +5,20 @@
 	"description": "Free font glyphs tailored for map rendering.",
 	"license": "MIT",
 	"type": "module",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/versatiles-org/versatiles-fonts.git"
+	},
 	"scripts": {
 		"build": "node scripts/build.ts",
-		"check": "npm run typecheck && npm run format:check",
+		"check": "npm run typecheck && npm run format:check && npm run build -- --dry-run",
 		"format:check": "prettier --check .",
 		"format": "prettier --write .",
 		"glyph-diff": "node scripts/glyph-diff.ts",
-		"release": "bash scripts/release.sh",
+		"release": "vrt release",
 		"typecheck": "tsc --noEmit",
 		"update-fonts": "node scripts/update-fonts.ts",
-		"upgrade": "ncu -u --peer && rm -rf node_modules package-lock.json && npm install",
+		"upgrade": "vrt deps-upgrade",
 		"verify-links": "node scripts/verify-links.ts"
 	},
 	"engines": {
@@ -27,7 +31,7 @@
 	"devDependencies": {
 		"@types/fontkit": "^2.0.9",
 		"@types/node": "^26.6.11",
-		"npm-check-updates": "^23.1.1",
+		"@versatiles/release-tool": "^2.23.0",
 		"prettier": "^3.10.1",
 		"typescript": "^7.0.2"
 	}

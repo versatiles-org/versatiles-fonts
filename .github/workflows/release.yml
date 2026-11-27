@@ -1,21 +1,46 @@
 name: Release
 
+# Started by the tag that `npm run release` (`vrt release`) pushes. This workflow checks the
+# tagged commit, renders the glyph archives into a draft release, and then publishes that draft
+# with the notes from CHANGELOG.md. The release only becomes visible once all archives are
+# attached, so `releases/latest/download/…` never points at a release without them.
+# Setup: https://github.com/versatiles-org/node-release-tool#release-workflow
+#
+# `vrt release` watches this workflow by its name, so keep it "Release".
+
 on:
   push:
     tags:
       - 'v*'
-  workflow_dispatch:
 
-env:
-  GH_TOKEN: ${{ github.token }}
+permissions: {}
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  release:
-    name: Build and Release
+  # Checks that the tag matches package.json and has notes in CHANGELOG.md, that the tagged commit
+  # is on main, and runs `npm run check`. There are no npm packages to pack: the package is private.
+  build:
+    name: Verify and check
+    uses: versatiles-org/node-release-tool/.github/workflows/release.yml@v2.23.0
     permissions:
-      contents: write
-    runs-on: ubuntu-latest
+      contents: read
 
+  # Renders the archives with the latest versatiles_glyphs release and attaches them to a draft
+  # release. A re-run replaces the files of the draft, but never touches a published release.
+  archives:
+    name: Build archives
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # draft release
+    outputs:
+      glyphs-version: ${{ steps.glyphs.outputs.version }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ github.ref_name }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
@@ -24,17 +49,18 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Install versatiles_glyphs
+        id: glyphs
         run: |
           curl -Ls \
             "https://github.com/versatiles-org/versatiles-glyphs-rs/raw/refs/heads/main/scripts/install.sh" \
             | sh
-
-      # Get latest release tag and store the tag name (e.g. "v1.2.3") in RELEASE_TAG.
-      - name: Get Version
-        id: get_tag
-        run: echo "RELEASE_TAG=$(gh release list --limit 1 --json tagName -q '.[0].tagName')" >> $GITHUB_ENV
+          echo "version=$(versatiles_glyphs --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
 
       # Builds with and without --link-duplicates must extract to identical files.
       - name: Verify hardlinked archives
@@ -43,27 +69,43 @@ jobs:
       - name: Build fonts
         run: npm run build
 
-      # Upload files to the existing (pre)release
-      - name: Upload files to release
-        run: gh release upload "${RELEASE_TAG}" dist/*.tar.gz dist/*.tar.zst --clobber
-        env:
-          RELEASE_TAG: ${{ env.RELEASE_TAG }}
-
-      # Name the versatiles_glyphs release the archives were built with, so the
-      # dependency graph can report when a newer one means they need a rebuild.
-      # A rerun replaces the section instead of adding a second one.
-      - name: Add components to release notes
+      - name: Attach archives to the draft release
         run: |
-          GLYPHS_VERSION=$(versatiles_glyphs --version | awk '{print $2}')
-          NOTES="${RUNNER_TEMP}/notes.md"
-          gh release view "${RELEASE_TAG}" --json body -q .body | sed '/^## Components$/,$d' > "${NOTES}"
-          printf '\n## Components\n\n- [VersaTiles Glyphs v%s](https://github.com/versatiles-org/versatiles-glyphs-rs)\n' "${GLYPHS_VERSION}" >> "${NOTES}"
-          gh release edit "${RELEASE_TAG}" --notes-file "${NOTES}"
-        env:
-          RELEASE_TAG: ${{ env.RELEASE_TAG }}
+          STATE=$(gh release view "$TAG" --json isDraft -q 'if .isDraft then "draft" else "published" end' 2>/dev/null || echo missing)
+          case "$STATE" in
+          missing) gh release create "$TAG" --draft --verify-tag --title "$TAG" --notes "" dist/*.tar.gz dist/*.tar.zst ;;
+          draft) gh release upload "$TAG" dist/*.tar.gz dist/*.tar.zst --clobber ;;
+          published) echo "::notice::$TAG is already published, its archives are left unchanged" ;;
+          esac
 
-      # Publish the release (remove draft, prerelease flags, etc.)
-      - name: Publish release
-        run: gh release edit "${RELEASE_TAG}" --draft=false --latest --prerelease=false
-        env:
-          RELEASE_TAG: ${{ env.RELEASE_TAG }}
+  # Publishes the draft with the notes from CHANGELOG.md, as the latest release.
+  publish:
+    name: Publish
+    needs: [build, archives]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # GitHub release
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Download release files
+        uses: actions/download-artifact@v8
+        with:
+          name: release
+          path: release
+
+      # Names the versatiles_glyphs release the archives were built with, so the dependency graph
+      # can report when a newer one means they need a rebuild.
+      - name: Add components to the release notes
+        run: |
+          printf '\n## Components\n\n- [VersaTiles Glyphs v%s](https://github.com/versatiles-org/versatiles-glyphs-rs)\n' \
+            "${{ needs.archives.outputs.glyphs-version }}" >> release/notes.md
+
+      - name: Publish the GitHub release
+        run: npx --yes "@versatiles/release-tool@${{ needs.build.outputs.tool-version }}" release-publish release --tag "$GITHUB_REF_NAME"

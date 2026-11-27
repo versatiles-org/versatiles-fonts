@@ -32,7 +32,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Typecheck and formatting
+      # Typecheck, formatting and a dry run of the build
       - name: Check
         run: npm run check
 
@@ -43,9 +43,6 @@ jobs:
             | sh
 
       # Builds with and without --link-duplicates must extract to identical files (with GNU tar here).
-      # A small sample of faces with shared fallback fonts, so this takes seconds; the release workflow verifies all of fonts/.
+      # A small sample of faces with shared fallback fonts, so this takes seconds.
       - name: Verify hardlinked archives
         run: npm run verify-links -- --sample
-
-      - name: Dry-run build
-        run: npm run build -- --dry-run

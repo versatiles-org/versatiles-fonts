@@ -82,3 +82,7 @@ To add your own fonts:
    - `$style`: The font style, such as "Thin", "Extra Light", "Light", "Medium", "Regular", "Semi Bold", "Bold", "Extra Bold", or "Black", optionally followed by "Italic".
    - File naming format: `fonts/$family/$family - $style.ttf`.
 3. If you need custom file names or want to merge multiple `*.ttf`/`*.otf` files (e.g., when combining character sets exceeding 64K chars), create a `fonts.json` file. Refer to the `fonts/Noto Sans/` directory for an example configuration.
+
+## Releasing
+
+Run `npm run release` on a clean, pushed `main` whose CI has passed. It runs [`vrt release`](https://github.com/versatiles-org/node-release-tool#release-workflow): it raises the version, updates `CHANGELOG.md`, and pushes the commit and its tag. The tag starts the release workflow, which renders the archives with the latest `versatiles_glyphs` release, attaches them to a draft release, and publishes it. The release notes name the `versatiles_glyphs` version, so the [dependency graph](https://versatiles.org/dependency-graph/) can show when a newer one means the fonts need a new release.
